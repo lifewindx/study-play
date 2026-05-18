@@ -8,10 +8,13 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setResent(false);
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithPassword({
       email,
@@ -24,6 +27,24 @@ export function LoginPage() {
     }
     navigate("/classes");
   }
+
+  async function handleResendConfirmation() {
+    if (!email) return;
+    setResending(true);
+    setError("");
+    const { error: err } = await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+    setResending(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    setResent(true);
+  }
+
+  const isEmailNotConfirmed = error.includes("Email not confirmed");
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -54,10 +75,30 @@ export function LoginPage() {
             required
             minLength={6}
           />
-          {error && (
+          {error && !isEmailNotConfirmed && (
             <p className="text-sm" style={{ color: "var(--danger, #ef4444)" }}>
               {error}
             </p>
+          )}
+          {isEmailNotConfirmed && (
+            <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+                Email not confirmed. Check your inbox.
+              </p>
+              {resent && (
+                <p className="text-xs" style={{ color: "var(--accent)" }}>
+                  Confirmation email resent. Check your inbox.
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                disabled={resending}
+                className="btn-ghost text-xs w-full"
+              >
+                {resending ? "Sending..." : "Resend confirmation email"}
+              </button>
+            </div>
           )}
           <button
             type="submit"
