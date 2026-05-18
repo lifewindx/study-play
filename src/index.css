@@ -238,4 +238,45 @@
   .control-chip:hover {
     background-color: var(--surface-strong);
   }
+
+  .fullscreen-player {
+    @apply fixed inset-0 z-50;
+    background: black;
+  }
+
+  .fullscreen-video-container {
+    @apply flex flex-col h-full w-full;
+    background: black;
+  }
+
+  .fullscreen-video {
+    @apply flex-1 min-h-0 overflow-hidden;
+  }
+
+  .fullscreen-overlay {
+    @apply shrink-0 px-4 pb-4 pt-6;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85) 30%);
+  }
+
+  .player-controls {
+    @apply shrink-0;
+  }
+
+  @media (max-width: 640px) {
+    .player-panel {
+      @apply p-2.5;
+    }
+
+    .control-group {
+      @apply gap-1 p-1.5;
+    }
+
+    .control-chip {
+      @apply px-2 py-1.5 text-xs;
+    }
+
+    .btn-primary {
+      @apply px-3 py-1.5 text-xs;
+    }
+  }
 }

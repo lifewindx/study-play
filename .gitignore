@@ -6,3 +6,4 @@ src-tauri/
 graphify-out/
 .env
 .env.local
+.vercel

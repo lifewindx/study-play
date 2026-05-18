@@ -142,6 +142,17 @@ export function FullscreenIcon(props: IconProps) {
   );
 }
 
+export function FullscreenExitIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 8V3h5" />
+      <path d="M16 3h5v5" />
+      <path d="M3 16v5h5" />
+      <path d="M16 21h5v-5" />
+    </IconBase>
+  );
+}
+
 export function HomeIcon(props: IconProps) {
   return (
     <IconBase {...props}>

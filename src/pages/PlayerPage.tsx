@@ -7,6 +7,7 @@ import { SegmentList } from "../components/SegmentList";
 import { SegmentEditor } from "../components/SegmentEditor";
 import {
   FlipIcon,
+  FullscreenExitIcon,
   FullscreenIcon,
   GaugeIcon,
   HomeIcon,
@@ -15,13 +16,14 @@ import {
   PlayIcon,
   RotateIcon,
   TrashIcon,
-  UndoIcon,
 } from "../components/Icons";
 
 export function PlayerPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
   const videoRef = useRef<VideoPlayerHandle>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const hideControlsTimer = useRef<number | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [classTitle, setClassTitle] = useState("");
   const [segments, setSegments] = useState<Segment[]>([]);
@@ -35,6 +37,7 @@ export function PlayerPage() {
   const [flipV, setFlipV] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonVideoUrl, setLessonVideoUrl] = useState("");
@@ -66,6 +69,26 @@ export function PlayerPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    function onFullscreenChange() {
+      const nowFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(nowFullscreen);
+      if (!nowFullscreen) setShowControls(true);
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  function scheduleHideControls() {
+    if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
+    hideControlsTimer.current = window.setTimeout(() => setShowControls(false), 3000);
+  }
+
+  function showControlsTemporarily() {
+    setShowControls(true);
+    if (isFullscreen) scheduleHideControls();
+  }
 
   const recordSession = useCallback(async () => {
     if (!lessonId) return;
@@ -181,8 +204,16 @@ export function PlayerPage() {
     setRotation((prev) => (prev + 90) % 360);
   }
 
-  function toggleFullscreen() {
-    setIsFullscreen((prev) => !prev);
+  async function toggleFullscreen() {
+    if (!isFullscreen) {
+      try {
+        await playerContainerRef.current?.requestFullscreen();
+      } catch {
+        await document.documentElement.requestFullscreen();
+      }
+    } else {
+      await document.exitFullscreen();
+    }
   }
 
   function handleTimeUpdate(time: number) {
@@ -237,26 +268,36 @@ export function PlayerPage() {
   }
 
   return (
-    <div className="page-shell space-y-6">
-      <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-muted)" }}>
-        <button onClick={() => navigate("/classes")} className="icon-button" aria-label="Library">
-          <HomeIcon className="h-4 w-4" />
-        </button>
-        <span>/</span>
-        <button
-          onClick={() => navigate(`/classes/${lesson.class_id}`)}
-          className="rounded-xl px-2 py-1 transition-colors hover:bg-[var(--bg-tertiary)]"
-        >
-          {classTitle || "Class"}
-        </button>
-        <span>/</span>
-        <h1 className="truncate text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          {lesson.title}
-        </h1>
-      </div>
+    <div className={isFullscreen ? "fullscreen-player" : "page-shell space-y-4 sm:space-y-6"}>
+      {!isFullscreen && (
+        <div className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-muted)" }}>
+          <button onClick={() => navigate("/classes")} className="icon-button shrink-0" aria-label="Library">
+            <HomeIcon className="h-4 w-4" />
+          </button>
+          <span className="hidden sm:inline">/</span>
+          <button
+            onClick={() => navigate(`/classes/${lesson.class_id}`)}
+            className="hidden sm:block rounded-xl px-2 py-1 transition-colors hover:bg-[var(--bg-tertiary)] truncate max-w-[120px]"
+          >
+            {classTitle || "Class"}
+          </button>
+          <span className="hidden sm:inline">/</span>
+          <h1 className="truncate text-lg sm:text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
+            {lesson.title}
+          </h1>
+        </div>
+      )}
 
-      <div className={isFullscreen ? "fixed inset-0 z-50 flex flex-col bg-black p-4" : "player-panel"}>
-        <div className={isFullscreen ? "flex-1 overflow-hidden rounded-3xl" : "overflow-hidden rounded-3xl border"} style={{ borderColor: "var(--border-color)" }}>
+      <div
+        ref={playerContainerRef}
+        className={isFullscreen ? "fullscreen-video-container" : "player-panel"}
+      >
+        <div
+          className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-3xl border"}
+          style={!isFullscreen ? { borderColor: "var(--border-color)" } : undefined}
+          onMouseMove={showControlsTemporarily}
+          onTouchStart={showControlsTemporarily}
+        >
           <div className={isFullscreen ? "h-full" : "aspect-video"}>
             <VideoPlayer
               ref={videoRef}
@@ -278,7 +319,7 @@ export function PlayerPage() {
           </div>
           <div className="h-1.5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
             <div
-              className="h-full"
+              className="h-full transition-[width] duration-150"
               style={{
                 width: activeSegment
                   ? `${Math.max(
@@ -297,140 +338,143 @@ export function PlayerPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="w-full text-left">
+        <div
+          className={`player-controls ${isFullscreen ? "fullscreen-overlay" : "mt-3 sm:mt-4"} ${
+            isFullscreen && !showControls ? "opacity-0 pointer-events-none" : "opacity-100"
+          } transition-opacity duration-300`}
+        >
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
             {activeSegment ? (
-              <div className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                {activeSegment.label || `Segment ${segments.indexOf(activeSegment) + 1}`}
-                <span className="ml-3 text-sm font-mono font-normal" style={{ color: "var(--text-muted)" }}>
+              <div className="min-w-0">
+                <div className="truncate text-sm sm:text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {activeSegment.label || `Seg ${segments.indexOf(activeSegment) + 1}`}
+                </div>
+                <div className="text-xs font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
                   {formatTimeShort(currentTime)} / {formatTimeShort(activeSegment.end_time)}
-                </span>
+                </div>
               </div>
             ) : (
-              <div className="text-base" style={{ color: "var(--text-muted)" }}>
-                Add and select a segment to play
+              <div className="text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
+                Add a segment to play
               </div>
+            )}
+            {isFullscreen && (
+              <button onClick={toggleFullscreen} className="icon-button shrink-0">
+                <FullscreenExitIcon className="h-5 w-5" />
+              </button>
             )}
           </div>
 
-          <button
-            onClick={handlePlayPause}
-            className="btn-primary min-w-24 gap-2 disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={segments.length === 0}
-          >
-            {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
-            {isPlaying ? "Pause" : "Play"}
-          </button>
-
-          <div className="control-group">
-            <span className="inline-flex items-center gap-2 px-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-              <GaugeIcon className="h-4 w-4" />
-            </span>
-            <button onClick={() => handleSpeedChange(-0.1)} className="control-chip">
-              Slower
-            </button>
-            <span className="min-w-[3rem] text-center text-sm font-mono" style={{ color: "var(--text-primary)" }}>
-              {speed}x
-            </span>
-            <button onClick={() => handleSpeedChange(0.1)} className="control-chip">
-              Faster
-            </button>
-            <button onClick={() => setSpeed(1)} className="icon-button" aria-label="Reset speed">
-              <UndoIcon className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="control-group">
-            <button onClick={handleRotate} className="control-chip">
-              <RotateIcon className="h-4 w-4" />
-              Rotate
-            </button>
-
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <button
-              onClick={() => setFlipH(!flipH)}
-              className="control-chip"
-              style={{
-                backgroundColor: flipH ? "var(--accent)" : "var(--bg-tertiary)",
-                color: flipH ? "var(--accent-contrast)" : "var(--text-primary)",
-              }}
+              onClick={handlePlayPause}
+              className="btn-primary min-w-[64px] sm:min-w-24 gap-1.5 disabled:opacity-45 flex-shrink-0"
+              disabled={segments.length === 0}
             >
-              <FlipIcon className="h-4 w-4" />
-              {flipH ? "Unflip H" : "Flip H"}
+              {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
+              {isPlaying ? "Pause" : "Play"}
             </button>
 
-            <button
-              onClick={() => setFlipV(!flipV)}
-              className="control-chip"
-              style={{
-                backgroundColor: flipV ? "var(--accent)" : "var(--bg-tertiary)",
-                color: flipV ? "var(--accent-contrast)" : "var(--text-primary)",
-              }}
-            >
-              <FlipIcon className="h-4 w-4 rotate-90" />
-              {flipV ? "Unflip V" : "Flip V"}
-            </button>
+            <div className="control-group">
+              <button onClick={() => handleSpeedChange(-0.1)} className="control-chip px-2 sm:px-3" aria-label="Slower">−</button>
+              <span className="min-w-[2.4rem] text-center text-xs sm:text-sm font-mono" style={{ color: "var(--text-primary)" }}>
+                {speed}x
+              </span>
+              <button onClick={() => handleSpeedChange(0.1)} className="control-chip px-2 sm:px-3" aria-label="Faster">+</button>
+              <button onClick={() => setSpeed(1)} className="icon-button h-8 w-8" aria-label="Reset speed">
+                <GaugeIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
 
-            <button onClick={toggleFullscreen} className="control-chip">
-              <FullscreenIcon className="h-4 w-4" />
-              {isFullscreen ? "Exit" : "Fullscreen"}
-            </button>
+            <div className="control-group">
+              <button onClick={handleRotate} className="control-chip" aria-label="Rotate">
+                <RotateIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setFlipH(!flipH)}
+                className="control-chip"
+                style={{
+                  backgroundColor: flipH ? "var(--accent)" : "var(--bg-tertiary)",
+                  color: flipH ? "var(--accent-contrast)" : "var(--text-primary)",
+                }}
+                aria-label="Flip horizontally"
+              >
+                <FlipIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setFlipV(!flipV)}
+                className="control-chip"
+                style={{
+                  backgroundColor: flipV ? "var(--accent)" : "var(--bg-tertiary)",
+                  color: flipV ? "var(--accent-contrast)" : "var(--text-primary)",
+                }}
+                aria-label="Flip vertically"
+              >
+                <FlipIcon className="h-4 w-4 rotate-90" />
+              </button>
+              {!isFullscreen && (
+                <button onClick={toggleFullscreen} className="control-chip" aria-label="Fullscreen">
+                  <FullscreenIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
-
         </div>
       </div>
 
+      {!isFullscreen && (
+        <>
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="section-title">Segments</h2>
+              <button
+                onClick={() => {
+                  setShowNewSegment(true);
+                  setEditingSegmentId(null);
+                }}
+                className="btn-primary text-sm"
+              >
+                + Segment
+              </button>
+            </div>
 
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="section-title">
-            Practice Segments
-          </h2>
-          <button
-            onClick={() => {
-              setShowNewSegment(true);
-              setEditingSegmentId(null);
-            }}
-            className="btn-primary"
-          >
-            Add segment
-          </button>
-        </div>
+            {showNewSegment && (
+              <div className="mb-3">
+                <SegmentEditor
+                  onSave={handleSaveSegment}
+                  onCancel={() => setShowNewSegment(false)}
+                />
+              </div>
+            )}
 
-        {showNewSegment && (
-          <div className="mb-3">
-            <SegmentEditor
-              onSave={handleSaveSegment}
-              onCancel={() => setShowNewSegment(false)}
+            <SegmentList
+              segments={segments}
+              activeSegmentId={activeSegment?.id ?? null}
+              editingSegmentId={editingSegmentId}
+              onSelect={handleSelectSegment}
+              onEdit={(seg) => {
+                setEditingSegmentId(seg.id);
+                setShowNewSegment(false);
+              }}
+              onSaveEdit={handleSaveSegment}
+              onCancelEdit={() => setEditingSegmentId(null)}
+              onDelete={handleDeleteSegment}
+              onReorder={handleReorderSegment}
             />
           </div>
-        )}
 
-        <SegmentList
-          segments={segments}
-          activeSegmentId={activeSegment?.id ?? null}
-          editingSegmentId={editingSegmentId}
-          onSelect={handleSelectSegment}
-          onEdit={(seg) => {
-            setEditingSegmentId(seg.id);
-            setShowNewSegment(false);
-          }}
-          onSaveEdit={handleSaveSegment}
-          onCancelEdit={() => setEditingSegmentId(null)}
-          onDelete={handleDeleteSegment}
-          onReorder={handleReorderSegment}
-        />
-      </div>
-
-      <div className="flex justify-end gap-2 border-t pt-5" style={{ borderColor: "var(--border-color)" }}>
-        <button onClick={openLessonEditor} className="btn-ghost gap-2">
-          <PencilIcon className="h-4 w-4" />
-          Edit lesson
-        </button>
-        <button onClick={handleDeleteLesson} className="btn-ghost gap-2">
-          <TrashIcon className="h-4 w-4" />
-          Delete lesson
-        </button>
-      </div>
+          <div className="flex justify-end gap-2 border-t pt-4 sm:pt-5" style={{ borderColor: "var(--border-color)" }}>
+            <button onClick={openLessonEditor} className="btn-ghost gap-1.5 text-sm">
+              <PencilIcon className="h-4 w-4" />
+              Edit
+            </button>
+            <button onClick={handleDeleteLesson} className="btn-ghost gap-1.5 text-sm" style={{ color: "var(--danger, #ef4444)" }}>
+              <TrashIcon className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        </>
+      )}
 
       {showLessonForm && (
         <div className="modal-backdrop" onClick={closeLessonEditor}>
@@ -439,8 +483,8 @@ export function PlayerPage() {
               <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
                 Edit lesson
               </h2>
-              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                Updating the link can shift existing segment timing.
+              <p className="mt-1 text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
+                Changing the link may shift segment timing.
               </p>
             </div>
             <input
@@ -459,12 +503,8 @@ export function PlayerPage() {
               className="input-field mb-4"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={closeLessonEditor} className="btn-ghost">
-                Cancel
-              </button>
-              <button onClick={handleSaveLesson} className="btn-primary">
-                Save
-              </button>
+              <button onClick={closeLessonEditor} className="btn-ghost">Cancel</button>
+              <button onClick={handleSaveLesson} className="btn-primary">Save</button>
             </div>
           </div>
         </div>
