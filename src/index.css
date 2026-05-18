@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #c7c8cd;
+    --bg-secondary: #e5e7ec;
+    --bg-tertiary: #f3f4f6;
+    --surface-strong: #f7f8fa;
+    --surface-soft: rgba(231, 233, 238, 0.88);
+    --text-primary: #111214;
+    --text-secondary: #4f5359;
+    --text-muted: #888d95;
+    --border-color: rgba(18, 19, 22, 0.12);
+    --accent: #111214;
+    --accent-hover: #26272a;
+    --accent-contrast: #ffffff;
+    --accent-soft: rgba(17, 18, 20, 0.08);
+    --warning: #b87a15;
+    --success: #11895b;
+    --violet: #6f58d9;
+    --header-bg: rgba(235, 237, 242, 0.82);
+    --nav-active-bg: #111214;
+    --nav-active-text: #ffffff;
+    --card-hover-border: rgba(17, 18, 20, 0.24);
+    --shadow-soft: 0 22px 58px rgba(72, 75, 82, 0.16);
+  }
+
+  .dark {
+    --bg-primary: #0d0f10;
+    --bg-secondary: #131517;
+    --bg-tertiary: #1b1e21;
+    --surface-strong: #181b1e;
+    --surface-soft: rgba(19, 21, 23, 0.86);
+    --text-primary: #f0f3f5;
+    --text-secondary: #a0a7af;
+    --text-muted: #656d75;
+    --border-color: #262a2e;
+    --accent: #20b8f0;
+    --accent-hover: #4cc8f4;
+    --accent-contrast: #041014;
+    --accent-soft: rgba(32, 184, 240, 0.14);
+    --warning: #f0a51c;
+    --success: #1bd48c;
+    --violet: #7657ff;
+    --header-bg: rgba(13, 15, 16, 0.86);
+    --nav-active-bg: var(--surface-strong);
+    --nav-active-text: var(--text-primary);
+    --card-hover-border: rgba(32, 184, 240, 0.42);
+    --shadow-soft: 0 18px 46px rgba(0, 0, 0, 0.32);
+  }
+}
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    background-color: var(--bg-primary);
+  }
+
+  body {
+    @apply m-0 p-0 font-sans antialiased;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    letter-spacing: 0;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .app-shell {
+    min-height: 100vh;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 18rem),
+      var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .page-shell {
+    @apply w-full max-w-6xl mx-auto;
+  }
+
+  .section-title {
+    @apply text-sm font-semibold uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-xl transition-all duration-150;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    @apply btn;
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+    box-shadow: 0 14px 28px var(--accent-soft);
+  }
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+  }
+  .btn-ghost {
+    @apply btn;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
+  .btn-ghost:hover {
+    background-color: var(--surface-strong);
+  }
+  .card {
+    @apply rounded-3xl border transition-colors duration-150;
+    background-color: var(--surface-soft);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
+  }
+  .card:hover {
+    border-color: var(--card-hover-border);
+  }
+  .input-field {
+    @apply w-full px-3 py-2 rounded-xl border text-sm outline-none transition-colors duration-150;
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+  .input-field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .nav-link {
+    @apply rounded-xl px-3 py-2 text-sm font-medium transition-colors;
+    color: var(--text-secondary);
+  }
+
+  .nav-link:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .nav-link-active {
+    color: var(--nav-active-text);
+    background-color: var(--nav-active-bg);
+    box-shadow: 0 10px 22px rgba(17, 18, 20, 0.08);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  .modal-backdrop {
+    @apply fixed inset-0 z-40 flex items-start justify-center px-5 py-24;
+    background: rgba(0, 0, 0, 0.54);
+    backdrop-filter: blur(10px);
+  }
+
+  .modal-card {
+    @apply w-full max-w-lg rounded-3xl border p-5;
+    background-color: var(--surface-strong);
+    border-color: var(--border-color);
+    box-shadow: 0 26px 80px rgba(17, 18, 20, 0.24);
+  }
+
+  .icon-button {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors;
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--text-secondary);
+  }
+
+  .icon-button:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .drag-handle {
+    @apply flex h-10 w-7 shrink-0 items-center justify-center rounded-xl;
+    color: var(--text-muted);
+    cursor: grab;
+    opacity: 0.42;
+  }
+
+  .drag-handle:hover {
+    opacity: 0.72;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .reorder-preview {
+    @apply pointer-events-none fixed z-[9999] opacity-90;
+    box-shadow: 0 24px 60px rgba(17, 18, 20, 0.24);
+    transform: rotate(-0.6deg) scale(1.01);
+  }
+
+  .reorder-marker {
+    @apply pointer-events-none fixed z-[9998] h-1 rounded-full;
+    background-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+    transform: translateY(-50%);
+  }
+
+  .player-panel {
+    @apply rounded-3xl border p-4;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .control-group {
+    @apply flex flex-wrap items-center gap-2 rounded-2xl border p-2;
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+  }
+
+  .control-chip {
+    @apply inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .control-chip:hover {
+    background-color: var(--surface-strong);
+  }
+}
