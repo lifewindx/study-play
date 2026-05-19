@@ -7,7 +7,6 @@ import { SegmentList } from "../components/SegmentList";
 import { SegmentEditor } from "../components/SegmentEditor";
 import {
   FlipIcon,
-  FullscreenExitIcon,
   FullscreenIcon,
   GaugeIcon,
   HomeIcon,
@@ -23,7 +22,6 @@ export function PlayerPage() {
   const navigate = useNavigate();
   const videoRef = useRef<VideoPlayerHandle>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
-  const hideControlsTimer = useRef<number | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [classTitle, setClassTitle] = useState("");
   const [segments, setSegments] = useState<Segment[]>([]);
@@ -37,7 +35,6 @@ export function PlayerPage() {
   const [flipV, setFlipV] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showControls, setShowControls] = useState(true);
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonVideoUrl, setLessonVideoUrl] = useState("");
@@ -74,21 +71,13 @@ export function PlayerPage() {
     function onFullscreenChange() {
       const nowFullscreen = !!document.fullscreenElement;
       setIsFullscreen(nowFullscreen);
-      if (!nowFullscreen) setShowControls(true);
+      if (!nowFullscreen) {
+        try { screen.orientation?.unlock(); } catch {}
+      }
     }
     document.addEventListener("fullscreenchange", onFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
-
-  function scheduleHideControls() {
-    if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
-    hideControlsTimer.current = window.setTimeout(() => setShowControls(false), 3000);
-  }
-
-  function showControlsTemporarily() {
-    setShowControls(true);
-    if (isFullscreen) scheduleHideControls();
-  }
 
   const recordSession = useCallback(async () => {
     if (!lessonId) return;
@@ -208,10 +197,13 @@ export function PlayerPage() {
     if (!isFullscreen) {
       try {
         await playerContainerRef.current?.requestFullscreen();
+        try { (screen.orientation as { lock?: (o: string) => Promise<void> }).lock?.("landscape"); } catch {}
       } catch {
         await document.documentElement.requestFullscreen();
+        try { (screen.orientation as { lock?: (o: string) => Promise<void> }).lock?.("landscape"); } catch {}
       }
     } else {
+      try { screen.orientation?.unlock(); } catch {}
       await document.exitFullscreen();
     }
   }
@@ -295,10 +287,8 @@ export function PlayerPage() {
         <div
           className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-3xl border"}
           style={!isFullscreen ? { borderColor: "var(--border-color)" } : undefined}
-          onMouseMove={showControlsTemporarily}
-          onTouchStart={showControlsTemporarily}
         >
-          <div className={isFullscreen ? "h-full" : "aspect-video"}>
+          <div className={isFullscreen ? "h-full w-full" : "aspect-video"}>
             <VideoPlayer
               ref={videoRef}
               videoType={lesson.video_type}
@@ -317,109 +307,102 @@ export function PlayerPage() {
               pauseCommand={pauseCommand}
             />
           </div>
-          <div className="h-1.5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-            <div
-              className="h-full transition-[width] duration-150"
-              style={{
-                width: activeSegment
-                  ? `${Math.max(
-                      0,
-                      Math.min(
-                        100,
-                        ((currentTime - activeSegment.start_time) /
-                          Math.max(activeSegment.end_time - activeSegment.start_time, 0.1)) *
-                          100
-                      )
-                    )}%`
-                  : "0%",
-                backgroundColor: "var(--accent)",
-              }}
-            />
-          </div>
+          {!isFullscreen && (
+            <div className="h-1.5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <div
+                className="h-full transition-[width] duration-150"
+                style={{
+                  width: activeSegment
+                    ? `${Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          ((currentTime - activeSegment.start_time) /
+                            Math.max(activeSegment.end_time - activeSegment.start_time, 0.1)) *
+                            100
+                        )
+                      )}%`
+                    : "0%",
+                  backgroundColor: "var(--accent)",
+                }}
+              />
+            </div>
+          )}
         </div>
 
-        <div
-          className={`player-controls ${isFullscreen ? "fullscreen-overlay" : "mt-3 sm:mt-4"} ${
-            isFullscreen && !showControls ? "opacity-0 pointer-events-none" : "opacity-100"
-          } transition-opacity duration-300`}
-        >
-          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
-            {activeSegment ? (
-              <div className="min-w-0">
-                <div className="truncate text-sm sm:text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {activeSegment.label || `Seg ${segments.indexOf(activeSegment) + 1}`}
+        {!isFullscreen && (
+          <div className="player-controls mt-3 sm:mt-4">
+            <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+              {activeSegment ? (
+                <div className="min-w-0">
+                  <div className="truncate text-sm sm:text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                    {activeSegment.label || `Seg ${segments.indexOf(activeSegment) + 1}`}
+                  </div>
+                  <div className="text-xs font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    {formatTimeShort(currentTime)} / {formatTimeShort(activeSegment.end_time)}
+                  </div>
                 </div>
-                <div className="text-xs font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
-                  {formatTimeShort(currentTime)} / {formatTimeShort(activeSegment.end_time)}
+              ) : (
+                <div className="text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
+                  Add a segment to play
                 </div>
-              </div>
-            ) : (
-              <div className="text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
-                Add a segment to play
-              </div>
-            )}
-            {isFullscreen && (
-              <button onClick={toggleFullscreen} className="icon-button shrink-0">
-                <FullscreenExitIcon className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <button
-              onClick={handlePlayPause}
-              className="btn-primary min-w-[64px] sm:min-w-24 gap-1.5 disabled:opacity-45 flex-shrink-0"
-              disabled={segments.length === 0}
-            >
-              {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
-              {isPlaying ? "Pause" : "Play"}
-            </button>
-
-            <div className="control-group">
-              <button onClick={() => handleSpeedChange(-0.1)} className="control-chip px-2 sm:px-3" aria-label="Slower">−</button>
-              <span className="min-w-[2.4rem] text-center text-xs sm:text-sm font-mono" style={{ color: "var(--text-primary)" }}>
-                {speed}x
-              </span>
-              <button onClick={() => handleSpeedChange(0.1)} className="control-chip px-2 sm:px-3" aria-label="Faster">+</button>
-              <button onClick={() => setSpeed(1)} className="icon-button h-8 w-8" aria-label="Reset speed">
-                <GaugeIcon className="h-3.5 w-3.5" />
-              </button>
+              )}
             </div>
 
-            <div className="control-group">
-              <button onClick={handleRotate} className="control-chip" aria-label="Rotate">
-                <RotateIcon className="h-4 w-4" />
-              </button>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <button
-                onClick={() => setFlipH(!flipH)}
-                className="control-chip"
-                style={{
-                  backgroundColor: flipH ? "var(--accent)" : "var(--bg-tertiary)",
-                  color: flipH ? "var(--accent-contrast)" : "var(--text-primary)",
-                }}
-                aria-label="Flip horizontally"
+                onClick={handlePlayPause}
+                className="btn-primary min-w-[64px] sm:min-w-24 gap-1.5 disabled:opacity-45 flex-shrink-0"
+                disabled={segments.length === 0}
               >
-                <FlipIcon className="h-4 w-4" />
+                {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
+                {isPlaying ? "Pause" : "Play"}
               </button>
-              <button
-                onClick={() => setFlipV(!flipV)}
-                className="control-chip"
-                style={{
-                  backgroundColor: flipV ? "var(--accent)" : "var(--bg-tertiary)",
-                  color: flipV ? "var(--accent-contrast)" : "var(--text-primary)",
-                }}
-                aria-label="Flip vertically"
-              >
-                <FlipIcon className="h-4 w-4 rotate-90" />
-              </button>
-              {!isFullscreen && (
+
+              <div className="control-group">
+                <button onClick={() => handleSpeedChange(-0.1)} className="control-chip px-2 sm:px-3" aria-label="Slower">−</button>
+                <span className="min-w-[2.4rem] text-center text-xs sm:text-sm font-mono" style={{ color: "var(--text-primary)" }}>
+                  {speed}x
+                </span>
+                <button onClick={() => handleSpeedChange(0.1)} className="control-chip px-2 sm:px-3" aria-label="Faster">+</button>
+                <button onClick={() => setSpeed(1)} className="icon-button h-8 w-8" aria-label="Reset speed">
+                  <GaugeIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <div className="control-group">
+                <button onClick={handleRotate} className="control-chip" aria-label="Rotate">
+                  <RotateIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setFlipH(!flipH)}
+                  className="control-chip"
+                  style={{
+                    backgroundColor: flipH ? "var(--accent)" : "var(--bg-tertiary)",
+                    color: flipH ? "var(--accent-contrast)" : "var(--text-primary)",
+                  }}
+                  aria-label="Flip horizontally"
+                >
+                  <FlipIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setFlipV(!flipV)}
+                  className="control-chip"
+                  style={{
+                    backgroundColor: flipV ? "var(--accent)" : "var(--bg-tertiary)",
+                    color: flipV ? "var(--accent-contrast)" : "var(--text-primary)",
+                  }}
+                  aria-label="Flip vertically"
+                >
+                  <FlipIcon className="h-4 w-4 rotate-90" />
+                </button>
                 <button onClick={toggleFullscreen} className="control-chip" aria-label="Fullscreen">
                   <FullscreenIcon className="h-4 w-4" />
                 </button>
-              )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {!isFullscreen && (
