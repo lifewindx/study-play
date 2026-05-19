@@ -60,6 +60,7 @@ export function SegmentEditor({ segment, onSave, onCancel }: SegmentEditorProps)
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         className="input-field"
+        maxLength={50}
         style={{
           backgroundColor: "var(--bg-primary)",
           borderColor: "var(--border-color)",

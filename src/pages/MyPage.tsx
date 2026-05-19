@@ -137,6 +137,7 @@ export function MyPage() {
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               className="input-field"
+              maxLength={10}
               autoFocus
             />
             <div className="flex gap-2">

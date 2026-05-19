@@ -214,6 +214,7 @@ export function LessonPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="input-field mb-3"
+              maxLength={100}
               autoFocus
             />
             <input
@@ -222,6 +223,8 @@ export function LessonPage() {
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
               className="input-field mb-4"
+              maxLength={2000}
+              pattern="https?://.+"
             />
             <div className="flex justify-end gap-2">
               <button onClick={closeForm} className="btn-ghost">
@@ -252,6 +255,7 @@ export function LessonPage() {
               value={classTitle}
               onChange={(e) => setClassTitle(e.target.value)}
               className="input-field mb-3"
+              maxLength={100}
               autoFocus
             />
             <textarea
@@ -260,6 +264,7 @@ export function LessonPage() {
               onChange={(e) => setClassDescription(e.target.value)}
               className="input-field mb-4 resize-none"
               rows={3}
+              maxLength={500}
             />
             <div className="flex justify-end gap-2">
               <button onClick={closeClassForm} className="btn-ghost">

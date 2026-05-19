@@ -486,6 +486,7 @@ export function PlayerPage() {
               value={lessonTitle}
               onChange={(e) => setLessonTitle(e.target.value)}
               className="input-field mb-3"
+              maxLength={100}
               autoFocus
             />
             <input
@@ -494,6 +495,8 @@ export function PlayerPage() {
               value={lessonVideoUrl}
               onChange={(e) => setLessonVideoUrl(e.target.value)}
               className="input-field mb-4"
+              maxLength={2000}
+              pattern="https?://.+"
             />
             <div className="flex justify-end gap-2">
               <button onClick={closeLessonEditor} className="btn-ghost">Cancel</button>

@@ -69,6 +69,7 @@ export function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="input-field"
             required
+            maxLength={254}
             autoFocus
           />
           <input
@@ -79,6 +80,7 @@ export function LoginPage() {
             className="input-field"
             required
             minLength={8}
+            maxLength={128}
           />
           {error && !isEmailNotConfirmed && (
             <p className="text-sm" style={{ color: "var(--danger, #ef4444)" }}>

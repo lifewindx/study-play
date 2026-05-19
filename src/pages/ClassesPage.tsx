@@ -139,6 +139,7 @@ function closeForm() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="input-field mb-3"
+              maxLength={100}
               autoFocus
             />
             <textarea
@@ -147,6 +148,7 @@ function closeForm() {
               onChange={(e) => setDescription(e.target.value)}
               className="input-field mb-4 resize-none"
               rows={3}
+              maxLength={500}
             />
             <div className="flex justify-end gap-2">
               <button onClick={closeForm} className="btn-ghost">

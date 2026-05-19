@@ -66,6 +66,7 @@ export function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="input-field"
             required
+            maxLength={254}
             autoFocus
           />
           <input
@@ -76,6 +77,7 @@ export function SignupPage() {
             className="input-field"
             required
             minLength={8}
+            maxLength={128}
           />
           <input
             type="password"
@@ -84,6 +86,7 @@ export function SignupPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="input-field"
             required
+            maxLength={128}
           />
           {error && (
             <p className="text-sm" style={{ color: "var(--danger, #ef4444)" }}>
