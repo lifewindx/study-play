@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/db";
+import { sanitizeError } from "../lib/errors";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -22,7 +23,11 @@ export function LoginPage() {
     });
     setLoading(false);
     if (err) {
-      setError(err.message);
+      if (err.message.includes("Email not confirmed")) {
+        setError("Email not confirmed");
+      } else {
+        setError(sanitizeError(err));
+      }
       return;
     }
     navigate("/classes");
@@ -38,13 +43,13 @@ export function LoginPage() {
     });
     setResending(false);
     if (err) {
-      setError(err.message);
+      setError(sanitizeError(err));
       return;
     }
     setResent(true);
   }
 
-  const isEmailNotConfirmed = error.includes("Email not confirmed");
+  const isEmailNotConfirmed = error === "Email not confirmed";
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -73,7 +78,7 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="input-field"
             required
-            minLength={6}
+            minLength={8}
           />
           {error && !isEmailNotConfirmed && (
             <p className="text-sm" style={{ color: "var(--danger, #ef4444)" }}>

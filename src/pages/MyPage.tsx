@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { supabase, clearAllUserData, clearStudyHistory } from "../lib/db";
+import { sanitizeError } from "../lib/errors";
 import { Trash2Icon, MoonIcon, SunIcon } from "../components/Icons";
 
 export function MyPage() {
@@ -19,15 +20,15 @@ export function MyPage() {
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 6) {
-      setPwError("Password must be at least 6 characters");
+    if (!newPassword || newPassword.length < 8) {
+      setPwError("Password must be at least 8 characters");
       return;
     }
     setPwError("");
     setPwMessage("");
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      setPwError(error.message);
+      setPwError(sanitizeError(error));
     } else {
       setPwMessage("Password updated");
       setNewPassword("");
@@ -91,11 +92,11 @@ export function MyPage() {
         <form onSubmit={handleChangePassword} className="space-y-3">
           <input
             type="password"
-            placeholder="New password (6+ characters)"
+            placeholder="New password (8+ characters)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             className="input-field"
-            minLength={6}
+            minLength={8}
           />
           {pwError && <p className="text-xs" style={{ color: "var(--danger, #ef4444)" }}>{pwError}</p>}
           {pwMessage && <p className="text-xs" style={{ color: "var(--success, #11895b)" }}>{pwMessage}</p>}

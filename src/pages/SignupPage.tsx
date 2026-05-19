@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/db";
+import { sanitizeError } from "../lib/errors";
 
 export function SignupPage() {
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ export function SignupPage() {
     });
     setLoading(false);
     if (err) {
-      setError(err.message);
+      setError(sanitizeError(err));
       return;
     }
     setSuccess(true);
@@ -66,12 +67,12 @@ export function SignupPage() {
           />
           <input
             type="password"
-            placeholder="Password (6+ characters)"
+            placeholder="Password (8+ characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="input-field"
             required
-            minLength={6}
+            minLength={8}
           />
           {error && (
             <p className="text-sm" style={{ color: "var(--danger, #ef4444)" }}>
