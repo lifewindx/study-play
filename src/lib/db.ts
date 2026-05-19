@@ -123,13 +123,22 @@ class SupabaseDB implements StudyDb {
 
     if (normalized.includes("FROM study_sessions ss JOIN lessons l")) {
       const startDate = String(bindValues[0]);
-      const endDate = String(bindValues[1]);
-      const { data, error } = await supabase
+      const endDate = bindValues.length > 1 ? String(bindValues[1]) : null;
+      let query = supabase
         .from("study_sessions")
         .select("*, lessons!inner(title, classes!inner(title))")
-        .gte("started_at", startDate)
-        .lte("started_at", endDate + "T23:59:59")
         .order("started_at", { ascending: false });
+
+      if (endDate) {
+        query = query.gte("started_at", startDate).lte("started_at", endDate + "T23:59:59");
+      } else {
+        const nextDay = new Date(startDate + "T00:00:00");
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayStr = nextDay.toISOString().slice(0, 10);
+        query = query.gte("started_at", startDate).lt("started_at", nextDayStr);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       const rows = (data ?? [])
         .filter((s) => s.lessons && s.lessons.classes)

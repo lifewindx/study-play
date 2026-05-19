@@ -11,8 +11,17 @@ interface SessionRow extends StudySession {
 interface DayData {
   date: string;
   totalMinutes: number;
-  label: string;
+  classTitles: string[];
 }
+
+const circleColors = [
+  "var(--accent)",
+  "var(--violet)",
+  "var(--success)",
+  "var(--warning)",
+  "#f06090",
+  "#30c0d0",
+];
 
 export function CalendarPage() {
   const [year, setYear] = useState(new Date().getFullYear());
@@ -44,11 +53,14 @@ export function CalendarPage() {
         dayMap.set(dateKey, {
           date: dateKey,
           totalMinutes: 0,
-          label: `${row.class_title} > ${row.lesson_title}`,
+          classTitles: [],
         });
       }
       const entry = dayMap.get(dateKey)!;
       entry.totalMinutes += Math.round(row.duration_seconds / 60);
+      if (!entry.classTitles.includes(row.class_title)) {
+        entry.classTitles.push(row.class_title);
+      }
     }
 
     setDays(Array.from(dayMap.values()));
@@ -170,27 +182,28 @@ export function CalendarPage() {
           return (
             <div key={day}
               onClick={() => data && openDateDetail(dateStr)}
-              className={`aspect-square p-1.5 border-b border-r relative ${data ? "cursor-pointer hover:bg-[var(--bg-tertiary)]" : ""}`}
+              className={"aspect-square p-1.5 border-b border-r relative" + (data ? " cursor-pointer hover:bg-[var(--bg-tertiary)]" : "")}
               style={{
                 borderColor: "var(--border-color)",
-                backgroundColor: data ? "var(--bg-primary)" : "var(--bg-primary)",
+                backgroundColor: "var(--bg-primary)",
               }}>
-              <span className={`text-xs ${isToday ? "font-bold" : ""}`}
+              <span className={"text-xs" + (isToday ? " font-bold" : "")}
                 style={{ color: isToday ? "var(--accent)" : "var(--text-primary)" }}>
                 {day}
               </span>
-              {data && (
-                <div className="absolute inset-x-1 top-7">
-                  <div className="mb-1 flex gap-0.5">
-                    {Array.from({ length: Math.min(3, Math.ceil(data.totalMinutes / 15)) }).map((_, j) => (
-                      <div key={j} className="flex-1 h-1 rounded-full"
-                        style={{ backgroundColor: "var(--accent)" }} />
-                    ))}
-                  </div>
-                  <div className="text-[9px] leading-tight truncate"
-                    style={{ color: "var(--text-secondary)" }}>
-                    {data.label}
-                  </div>
+              {data && data.classTitles.length > 0 && (
+                <div className="absolute bottom-1.5 inset-x-1.5 flex justify-center gap-0.5">
+                  {data.classTitles.slice(0, 4).map((_, j) => (
+                    <span key={j}
+                      className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: circleColors[j % circleColors.length] }}
+                    />
+                  ))}
+                  {data.classTitles.length > 4 && (
+                    <span className="text-[7px] leading-none" style={{ color: "var(--text-muted)" }}>
+                      +{data.classTitles.length - 4}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -218,10 +231,10 @@ export function CalendarPage() {
                 {selectedSessions.map((s) => (
                   <div key={s.id} className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
                     <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                      {s.class_title} &rsaquo; {s.lesson_title}
+                      {s.class_title} › {s.lesson_title}
                     </div>
                     <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                      {s.started_at.slice(11, 16)} &middot; {formatMin(Math.round(s.duration_seconds / 60))}
+                      {s.started_at.slice(11, 16)} · {formatMin(Math.round(s.duration_seconds / 60))}
                     </div>
                   </div>
                 ))}
