@@ -25,12 +25,23 @@ export function SegmentEditor({ segment, onSave, onCancel }: SegmentEditorProps)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const start = parseTimeInput(startTime);
+    const end = parseTimeInput(endTime);
+    if (end <= start) return;
     onSave({
       label: label.trim(),
-      start_time: parseTimeInput(startTime),
-      end_time: parseTimeInput(endTime),
-      loop_gap: parseFloat(loopGap) || 0,
+      start_time: start,
+      end_time: end,
+      loop_gap: Math.max(0, parseFloat(loopGap) || 0),
     });
+  }
+
+  function filterTimeInput(value: string): string {
+    return value.replace(/[^0-9:. ]/g, "");
+  }
+
+  function filterNumberInput(value: string): string {
+    return value.replace(/[^0-9.]/g, "");
   }
 
   return (
@@ -64,8 +75,9 @@ export function SegmentEditor({ segment, onSave, onCancel }: SegmentEditorProps)
           </label>
           <input
             type="text"
+            inputMode="decimal"
             value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            onChange={(e) => setStartTime(filterTimeInput(e.target.value))}
             className="input-field font-mono"
             style={{
               backgroundColor: "var(--bg-primary)",
@@ -81,8 +93,9 @@ export function SegmentEditor({ segment, onSave, onCancel }: SegmentEditorProps)
           </label>
           <input
             type="text"
+            inputMode="decimal"
             value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
+            onChange={(e) => setEndTime(filterTimeInput(e.target.value))}
             className="input-field font-mono"
             style={{
               backgroundColor: "var(--bg-primary)",
@@ -99,11 +112,12 @@ export function SegmentEditor({ segment, onSave, onCancel }: SegmentEditorProps)
           Loop gap (seconds), 0 means seamless
         </label>
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
+          pattern="[0-9.]*"
           min="0"
-          step="0.1"
           value={loopGap}
-          onChange={(e) => setLoopGap(e.target.value)}
+          onChange={(e) => setLoopGap(filterNumberInput(e.target.value))}
           className="input-field"
           style={{
             backgroundColor: "var(--bg-primary)",
