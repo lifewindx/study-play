@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
 import { supabase, getDb } from "../lib/db";
-import { Trash2Icon } from "../components/Icons";
+import { Trash2Icon, MoonIcon, SunIcon } from "../components/Icons";
 
 export function MyPage() {
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState("");
   const [pwMessage, setPwMessage] = useState("");
@@ -74,6 +76,22 @@ export function MyPage() {
           <div className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Email</div>
           <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{user?.email}</div>
         </div>
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Display</h3>
+        <button
+          onClick={toggleTheme}
+          className="btn-ghost text-sm w-full justify-between"
+        >
+          <span className="flex items-center gap-2">
+            {theme === "dark" ? <MoonIcon className="h-4 w-4" /> : <SunIcon className="h-4 w-4" />}
+            {theme === "dark" ? "Dark" : "Light"} mode
+          </span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Tap to switch
+          </span>
+        </button>
       </div>
 
       <div className="card p-5 space-y-4">

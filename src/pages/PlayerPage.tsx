@@ -7,6 +7,7 @@ import { SegmentList } from "../components/SegmentList";
 import { SegmentEditor } from "../components/SegmentEditor";
 import {
   FlipIcon,
+  FullscreenExitIcon,
   FullscreenIcon,
   GaugeIcon,
   HomeIcon,
@@ -288,7 +289,7 @@ export function PlayerPage() {
           className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-3xl border"}
           style={!isFullscreen ? { borderColor: "var(--border-color)" } : undefined}
         >
-          <div className={isFullscreen ? "h-full w-full" : "aspect-video"}>
+          <div className={isFullscreen ? "h-full w-full relative" : "aspect-video"}>
             <VideoPlayer
               ref={videoRef}
               videoType={lesson.video_type}
@@ -306,6 +307,15 @@ export function PlayerPage() {
               playCommand={playCommand}
               pauseCommand={pauseCommand}
             />
+            {isFullscreen && (
+              <button
+                onClick={toggleFullscreen}
+                className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white/70 hover:bg-black/60 hover:text-white transition-colors"
+                aria-label="Exit fullscreen"
+              >
+                <FullscreenExitIcon className="h-5 w-5" />
+              </button>
+            )}
           </div>
           {!isFullscreen && (
             <div className="h-1.5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
