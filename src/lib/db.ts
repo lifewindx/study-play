@@ -306,3 +306,14 @@ class SupabaseDB implements StudyDb {
     return { rowsAffected: 0 };
   }
 }
+
+export async function clearAllUserData(): Promise<void> {
+  await supabase.from("study_sessions").delete().gt("id", 0);
+  await supabase.from("segments").delete().gt("id", 0);
+  await supabase.from("lessons").delete().gt("id", 0);
+  await supabase.from("classes").delete().gt("id", 0);
+}
+
+export async function clearStudyHistory(): Promise<void> {
+  await supabase.from("study_sessions").delete().gt("id", 0);
+}

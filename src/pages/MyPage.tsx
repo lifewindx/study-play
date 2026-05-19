@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
-import { supabase, getDb } from "../lib/db";
+import { supabase, clearAllUserData, clearStudyHistory } from "../lib/db";
 import { Trash2Icon, MoonIcon, SunIcon } from "../components/Icons";
 
 export function MyPage() {
@@ -14,6 +14,8 @@ export function MyPage() {
   const [pwError, setPwError] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -33,27 +35,17 @@ export function MyPage() {
   }
 
   async function handleDeleteAccount() {
-    if (!window.confirm("Delete your account permanently? All data will be lost. This cannot be undone.")) return;
-    if (!window.confirm("Are you absolutely sure? Type DELETE to confirm.")) return;
+    if (deleteConfirm !== "DELETE") return;
     setDeleting(true);
-    const db = await getDb();
-    await db.execute("DELETE FROM study_sessions WHERE 1=1", []);
-    await db.execute("DELETE FROM segments WHERE 1=1", []);
-    await db.execute("DELETE FROM lessons WHERE 1=1", []);
-    await db.execute("DELETE FROM classes WHERE 1=1", []);
-    const { error } = await supabase.auth.admin?.deleteUser(user!.id);
-    if (error) {
-      await supabase.auth.signOut();
-    }
+    await clearAllUserData();
+    await signOut();
     setDeleting(false);
     navigate("/login");
   }
 
   async function handleClearHistory() {
-    if (!window.confirm("Delete all study history? Your classes, lessons, and segments will remain.")) return;
     setClearing(true);
-    const db = await getDb();
-    await db.execute("DELETE FROM study_sessions WHERE 1=1", []);
+    await clearStudyHistory();
     setClearing(false);
   }
 
@@ -130,17 +122,48 @@ export function MyPage() {
 
       <div className="card p-5 space-y-4">
         <h3 className="text-sm font-semibold" style={{ color: "var(--danger, #ef4444)" }}>Danger zone</h3>
-        <button
-          onClick={handleDeleteAccount}
-          disabled={deleting}
-          className="btn-ghost text-sm w-full justify-between"
-          style={{ color: "var(--danger, #ef4444)", borderColor: "var(--danger, #ef4444)" }}
-        >
-          <span>Delete account</span>
-          <Trash2Icon className="h-4 w-4" />
-        </button>
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="btn-ghost text-sm w-full justify-between"
+            style={{ color: "var(--danger, #ef4444)", borderColor: "var(--danger, #ef4444)" }}
+          >
+            <span>Delete account</span>
+            <Trash2Icon className="h-4 w-4" />
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              All your data will be permanently deleted. Type <strong>DELETE</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder='Type DELETE to confirm'
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              className="input-field"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirm(""); }}
+                className="btn-ghost text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting || deleteConfirm !== "DELETE"}
+                className="btn-primary text-sm disabled:opacity-40"
+                style={{ backgroundColor: "var(--danger, #ef4444)" }}
+              >
+                {deleting ? "Deleting..." : "Delete permanently"}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Permanently deletes your account and all data.
+          Permanently deletes all your data. You can sign up again later.
         </div>
       </div>
 
