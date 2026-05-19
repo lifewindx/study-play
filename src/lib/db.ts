@@ -132,10 +132,7 @@ class SupabaseDB implements StudyDb {
       if (endDate) {
         query = query.gte("started_at", startDate).lte("started_at", endDate + "T23:59:59");
       } else {
-        const nextDay = new Date(startDate + "T00:00:00");
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayStr = nextDay.toISOString().slice(0, 10);
-        query = query.gte("started_at", startDate).lt("started_at", nextDayStr);
+        query = query.gte("started_at", startDate).lte("started_at", startDate + "T23:59:59");
       }
 
       const { data, error } = await query;
