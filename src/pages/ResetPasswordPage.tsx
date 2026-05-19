@@ -1,15 +1,25 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/db";
 import { sanitizeError, validatePassword } from "../lib/errors";
 
-export function SignupPage() {
-  const [email, setEmail] = useState("");
+export function ResetPasswordPage() {
+  const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        setError("Invalid or expired reset link. Please request a new one.");
+      }
+      setChecking(false);
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,15 +29,23 @@ export function SignupPage() {
     if (pwError) { setError(pwError); return; }
     if (password !== confirmPassword) { setError("Passwords do not match"); return; }
 
-    setSuccess(false);
     setLoading(true);
-    const { error: err } = await supabase.auth.signUp({ email, password });
+    const { error: err } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (err) {
       setError(sanitizeError(err));
       return;
     }
     setSuccess(true);
+    setTimeout(() => navigate("/classes"), 2000);
+  }
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ color: "var(--text-muted)" }}>
+        Loading...
+      </div>
+    );
   }
 
   if (success) {
@@ -35,14 +53,11 @@ export function SignupPage() {
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
           <h1 className="mb-2 text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
-            Check your email
+            Password updated
           </h1>
-          <p className="mb-6 text-sm" style={{ color: "var(--text-muted)" }}>
-            We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Redirecting...
           </p>
-          <Link to="/login" className="btn-primary inline-block">
-            Go to sign in
-          </Link>
         </div>
       </div>
     );
@@ -52,34 +67,26 @@ export function SignupPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <h1 className="mb-2 text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          StudyPlay
+          Reset password
         </h1>
         <p className="mb-8 text-sm" style={{ color: "var(--text-muted)" }}>
-          Create your account
+          Enter your new password
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="input-field"
-            required
-            autoFocus
-          />
-          <input
             type="password"
-            placeholder="Password (8+ chars, special char)"
+            placeholder="New password (8+ chars, special char)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="input-field"
             required
             minLength={8}
+            autoFocus
           />
           <input
             type="password"
-            placeholder="Confirm password"
+            placeholder="Confirm new password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="input-field"
@@ -95,14 +102,13 @@ export function SignupPage() {
             disabled={loading}
             className="btn-primary w-full"
           >
-            {loading ? "Creating account..." : "Sign up"}
+            {loading ? "Updating..." : "Set new password"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-          Already have an account?{" "}
           <Link to="/login" className="font-medium" style={{ color: "var(--accent)" }}>
-            Sign in
+            Back to sign in
           </Link>
         </p>
       </div>

@@ -10,28 +10,25 @@ export function MyPage() {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [newPassword, setNewPassword] = useState("");
   const [pwMessage, setPwMessage] = useState("");
   const [pwError, setPwError] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  async function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newPassword || newPassword.length < 8) {
-      setPwError("Password must be at least 8 characters");
-      return;
-    }
+  async function handleSendResetLink() {
+    if (!user?.email) return;
     setPwError("");
     setPwMessage("");
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPwLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+    setPwLoading(false);
     if (error) {
       setPwError(sanitizeError(error));
     } else {
-      setPwMessage("Password updated");
-      setNewPassword("");
+      setPwMessage("Reset link sent. Check your email.");
     }
   }
 
@@ -89,21 +86,18 @@ export function MyPage() {
 
       <div className="card p-5 space-y-4">
         <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Change password</h3>
-        <form onSubmit={handleChangePassword} className="space-y-3">
-          <input
-            type="password"
-            placeholder="New password (8+ characters)"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="input-field"
-            minLength={8}
-          />
-          {pwError && <p className="text-xs" style={{ color: "var(--danger, #ef4444)" }}>{pwError}</p>}
-          {pwMessage && <p className="text-xs" style={{ color: "var(--success, #11895b)" }}>{pwMessage}</p>}
-          <button type="submit" className="btn-primary text-sm">
-            Update password
-          </button>
-        </form>
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          We'll send a secure link to <strong>{user?.email}</strong> to reset your password.
+        </p>
+        <button
+          onClick={handleSendResetLink}
+          disabled={pwLoading}
+          className="btn-ghost text-sm w-full"
+        >
+          {pwLoading ? "Sending..." : "Send reset link"}
+        </button>
+        {pwError && <p className="text-xs" style={{ color: "var(--danger, #ef4444)" }}>{pwError}</p>}
+        {pwMessage && <p className="text-xs" style={{ color: "var(--success, #11895b)" }}>{pwMessage}</p>}
       </div>
 
       <div className="card p-5 space-y-4">
