@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../hooks/useAuth";
+import { UserIcon } from "./Icons";
 
 const navItems = [
   { to: "/classes", label: "Library" },
@@ -8,7 +9,7 @@ const navItems = [
 ];
 
 export function AppHeader() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   return (
     <header
@@ -52,12 +53,13 @@ export function AppHeader() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button
-            onClick={signOut}
-            className="btn-ghost text-xs"
+          <NavLink
+            to="/mypage"
+            className="icon-button"
+            aria-label="My page"
           >
-            Sign out
-          </button>
+            <UserIcon className="h-5 w-5" />
+          </NavLink>
         </div>
       </div>
     </header>

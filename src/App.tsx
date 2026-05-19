@@ -6,6 +6,7 @@ import { PlayerPage } from "./pages/PlayerPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
+import { MyPage } from "./pages/MyPage";
 import { ThemeProvider } from "./hooks/useTheme";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import type { ReactNode } from "react";
@@ -41,6 +42,7 @@ function AppRoutes() {
                 <Route path="/classes/:classId" element={<LessonPage />} />
                 <Route path="/lesson/:lessonId" element={<PlayerPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/mypage" element={<MyPage />} />
               </Routes>
             </Layout>
           </AuthGuard>

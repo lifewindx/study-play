@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { StudySession } from "../types";
 import { getDb } from "../lib/db";
+import { ChevronLeftIcon, ChevronRightIcon } from "../components/Icons";
 
 interface SessionRow extends StudySession {
   lesson_title: string;
@@ -17,6 +18,9 @@ export function CalendarPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [days, setDays] = useState<DayData[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedSessions, setSelectedSessions] = useState<SessionRow[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const loadMonthData = useCallback(async () => {
     const db = await getDb();
@@ -33,7 +37,6 @@ export function CalendarPage() {
       [startDate, endDate]
     );
 
-    // Aggregate by day with one label per day showing "class > lesson".
     const dayMap = new Map<string, DayData>();
     for (const row of rows) {
       const dateKey = row.started_at.slice(0, 10);
@@ -54,6 +57,28 @@ export function CalendarPage() {
   useEffect(() => {
     loadMonthData();
   }, [loadMonthData]);
+
+  async function openDateDetail(dateStr: string) {
+    setSelectedDate(dateStr);
+    setLoadingDetail(true);
+    const db = await getDb();
+    const rows = await db.select<SessionRow[]>(
+      `SELECT ss.*, l.title as lesson_title, c.title as class_title
+       FROM study_sessions ss
+       JOIN lessons l ON l.id = ss.lesson_id
+       JOIN classes c ON c.id = l.class_id
+       WHERE date(ss.started_at) = $1
+       ORDER BY ss.started_at DESC`,
+      [dateStr]
+    );
+    setSelectedSessions(rows);
+    setLoadingDetail(false);
+  }
+
+  function closeDetail() {
+    setSelectedDate(null);
+    setSelectedSessions([]);
+  }
 
   function getDaysInMonth(y: number, m: number): number {
     return new Date(y, m, 0).getDate();
@@ -81,6 +106,13 @@ export function CalendarPage() {
   const today = new Date().toISOString().slice(0, 10);
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  function formatMin(min: number): string {
+    if (min < 60) return `${min}m`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
+
   return (
     <div className="page-shell">
       <div className="mb-6">
@@ -97,16 +129,14 @@ export function CalendarPage() {
           borderColor: "var(--border-color)",
         }}
       >
-        <button onClick={() => changeMonth(-1)}
-          className="btn-ghost text-sm">
-          Previous
+        <button onClick={() => changeMonth(-1)} className="icon-button" aria-label="Previous month">
+          <ChevronLeftIcon className="h-5 w-5" />
         </button>
         <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
           {year}. {String(month).padStart(2, "0")}
         </h2>
-        <button onClick={() => changeMonth(1)}
-          className="btn-ghost text-sm">
-          Next
+        <button onClick={() => changeMonth(1)} className="icon-button" aria-label="Next month">
+          <ChevronRightIcon className="h-5 w-5" />
         </button>
       </div>
 
@@ -139,10 +169,11 @@ export function CalendarPage() {
 
           return (
             <div key={day}
-              className="aspect-square p-1.5 border-b border-r relative"
+              onClick={() => data && openDateDetail(dateStr)}
+              className={`aspect-square p-1.5 border-b border-r relative ${data ? "cursor-pointer hover:bg-[var(--bg-tertiary)]" : ""}`}
               style={{
                 borderColor: "var(--border-color)",
-                backgroundColor: "var(--bg-primary)",
+                backgroundColor: data ? "var(--bg-primary)" : "var(--bg-primary)",
               }}>
               <span className={`text-xs ${isToday ? "font-bold" : ""}`}
                 style={{ color: isToday ? "var(--accent)" : "var(--text-primary)" }}>
@@ -166,6 +197,39 @@ export function CalendarPage() {
           );
         })}
       </div>
+
+      {selectedDate && (
+        <div className="modal-backdrop" onClick={closeDetail}>
+          <div className="modal-card max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                {selectedDate}
+              </h2>
+              <button onClick={closeDetail} className="icon-button" aria-label="Close">
+                <ChevronRightIcon className="h-5 w-5 rotate-90" />
+              </button>
+            </div>
+            {loadingDetail ? (
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</p>
+            ) : selectedSessions.length === 0 ? (
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No study sessions on this day.</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedSessions.map((s) => (
+                  <div key={s.id} className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
+                    <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                      {s.class_title} &rsaquo; {s.lesson_title}
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                      {s.started_at.slice(11, 16)} &middot; {formatMin(Math.round(s.duration_seconds / 60))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
