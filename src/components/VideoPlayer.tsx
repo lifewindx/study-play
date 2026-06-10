@@ -21,6 +21,7 @@ interface VideoPlayerProps {
 export interface VideoPlayerHandle {
   playSegment: (start: number, end: number, gap: number) => void;
   pause: () => void;
+  seekTo: (seconds: number) => void;
 }
 
 function extractYoutubeId(url: string): string | null {
@@ -244,6 +245,19 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       p.pauseVideo();
       clearLoopTimer();
       if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
+    },
+    seekTo(seconds) {
+      const p = playerRef.current;
+      if (!p || videoType !== "youtube") return;
+      const clampedSeconds = Math.max(0, seconds);
+      p.seekTo(clampedSeconds, true);
+      lastKnownTimeRef.current = clampedSeconds;
+      onTimeUpdateRef.current?.(clampedSeconds);
+      if (isPlayingRef.current) {
+        clearLoopTimer();
+        if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
+        scheduleLoop();
+      }
     },
   }));
 

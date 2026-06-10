@@ -226,6 +226,41 @@ export function PlayerPage() {
     setCurrentTime(time);
   }
 
+  function seekWithinActiveSegment(ratio: number) {
+    if (!activeSegment) return;
+    const segmentDuration = activeSegment.end_time - activeSegment.start_time;
+    if (segmentDuration <= 0) return;
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const nextTime = activeSegment.start_time + segmentDuration * clampedRatio;
+    setCurrentTime(nextTime);
+    videoRef.current?.seekTo(nextTime);
+  }
+
+  function handleProgressPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!activeSegment) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    seekWithinActiveSegment((e.clientX - rect.left) / rect.width);
+  }
+
+  function handleProgressKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (!activeSegment) return;
+    const duration = activeSegment.end_time - activeSegment.start_time;
+    const currentRatio = duration > 0 ? (currentTime - activeSegment.start_time) / duration : 0;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      seekWithinActiveSegment(currentRatio - 0.05);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      seekWithinActiveSegment(currentRatio + 0.05);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      seekWithinActiveSegment(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      seekWithinActiveSegment(1);
+    }
+  }
+
   function openLessonEditor() {
     if (!lesson) return;
     setLessonTitle(lesson.title);
@@ -335,7 +370,18 @@ export function PlayerPage() {
             )}
           </div>
           {!isFullscreen && (
-            <div className="h-1.5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+            <div
+              className={`h-2 ${activeSegment ? "cursor-pointer" : ""}`}
+              style={{ backgroundColor: "var(--bg-tertiary)" }}
+              onPointerDown={handleProgressPointerDown}
+              onKeyDown={handleProgressKeyDown}
+              role="slider"
+              tabIndex={activeSegment ? 0 : -1}
+              aria-label="Segment progress"
+              aria-valuemin={activeSegment?.start_time ?? 0}
+              aria-valuemax={activeSegment?.end_time ?? 0}
+              aria-valuenow={currentTime}
+            >
               <div
                 className="h-full transition-[width] duration-150"
                 style={{
