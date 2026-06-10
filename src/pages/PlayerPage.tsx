@@ -29,6 +29,8 @@ export function PlayerPage() {
   const [activeSegment, setActiveSegment] = useState<Segment | null>(null);
   const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
   const [showNewSegment, setShowNewSegment] = useState(false);
+  const [isSavingSegment, setIsSavingSegment] = useState(false);
+  const [segmentError, setSegmentError] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -122,27 +124,38 @@ export function PlayerPage() {
     end_time: number;
     loop_gap: number;
   }) {
-    const db = await getDb();
-    if (editingSegmentId !== null) {
-      await db.execute(
-        `UPDATE segments SET label = $1, start_time = $2, end_time = $3, loop_gap = $4,
-         updated_at = datetime('now','localtime') WHERE id = $5`,
-        [data.label, data.start_time, data.end_time, data.loop_gap, editingSegmentId]
-      );
-      setEditingSegmentId(null);
-    } else {
-      const maxOrder = await db.select<[{ max: number }]>(
-        "SELECT COALESCE(MAX(sort_order), -1) + 1 as max FROM segments WHERE lesson_id = $1",
-        [Number(lessonId)]
-      );
-      await db.execute(
-        `INSERT INTO segments (lesson_id, label, start_time, end_time, loop_gap, sort_order)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [Number(lessonId), data.label, data.start_time, data.end_time, data.loop_gap, maxOrder[0]?.max ?? 0]
-      );
-      setShowNewSegment(false);
+    if (!lessonId) return;
+    setIsSavingSegment(true);
+    setSegmentError("");
+
+    try {
+      const db = await getDb();
+      if (editingSegmentId !== null) {
+        await db.execute(
+          `UPDATE segments SET label = $1, start_time = $2, end_time = $3, loop_gap = $4,
+           updated_at = datetime('now','localtime') WHERE id = $5`,
+          [data.label, data.start_time, data.end_time, data.loop_gap, editingSegmentId]
+        );
+        setEditingSegmentId(null);
+      } else {
+        const nextSortOrder =
+          segments.length === 0
+            ? 0
+            : Math.max(...segments.map((segment) => segment.sort_order ?? 0)) + 1;
+        await db.execute(
+          `INSERT INTO segments (lesson_id, label, start_time, end_time, loop_gap, sort_order)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [Number(lessonId), data.label, data.start_time, data.end_time, data.loop_gap, nextSortOrder]
+        );
+        setShowNewSegment(false);
+      }
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      setSegmentError(error instanceof Error ? error.message : "Failed to save segment.");
+    } finally {
+      setIsSavingSegment(false);
     }
-    await loadData();
   }
 
   async function handleDeleteSegment(id: number) {
@@ -259,6 +272,10 @@ export function PlayerPage() {
       </div>
     );
   }
+
+  const lastSegment = segments.length > 0 ? segments[segments.length - 1] : null;
+  const newSegmentStartTime = activeSegment?.end_time ?? lastSegment?.end_time ?? 0;
+  const newSegmentEndTime = newSegmentStartTime + 10;
 
   return (
     <div className={isFullscreen ? "fullscreen-player" : "page-shell space-y-4 sm:space-y-6"}>
@@ -424,6 +441,7 @@ export function PlayerPage() {
                 onClick={() => {
                   setShowNewSegment(true);
                   setEditingSegmentId(null);
+                  setSegmentError("");
                 }}
                 className="btn-primary text-sm"
               >
@@ -431,11 +449,24 @@ export function PlayerPage() {
               </button>
             </div>
 
+            {segmentError && (
+              <p className="mb-3 rounded-2xl border px-3 py-2 text-sm" style={{ color: "var(--danger, #ef4444)", borderColor: "var(--danger, #ef4444)" }}>
+                {segmentError}
+              </p>
+            )}
+
             {showNewSegment && (
               <div className="mb-3">
                 <SegmentEditor
+                  key={`${newSegmentStartTime}-${newSegmentEndTime}`}
+                  initialStartTime={newSegmentStartTime}
+                  initialEndTime={newSegmentEndTime}
+                  isSaving={isSavingSegment}
                   onSave={handleSaveSegment}
-                  onCancel={() => setShowNewSegment(false)}
+                  onCancel={() => {
+                    setShowNewSegment(false);
+                    setSegmentError("");
+                  }}
                 />
               </div>
             )}

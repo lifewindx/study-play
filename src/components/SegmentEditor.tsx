@@ -4,31 +4,42 @@ import { formatTimeMs, parseTimeInput } from "../lib/utils";
 
 interface SegmentEditorProps {
   segment?: Segment;
+  initialStartTime?: number;
+  initialEndTime?: number;
+  isSaving?: boolean;
   onSave: (data: {
     label: string;
     start_time: number;
     end_time: number;
     loop_gap: number;
-  }) => void;
+  }) => void | Promise<void>;
   onCancel: () => void;
 }
 
-export function SegmentEditor({ segment, onSave, onCancel }: SegmentEditorProps) {
+export function SegmentEditor({
+  segment,
+  initialStartTime = 0,
+  initialEndTime = 10,
+  isSaving = false,
+  onSave,
+  onCancel,
+}: SegmentEditorProps) {
   const [label, setLabel] = useState(segment?.label ?? "");
   const [startTime, setStartTime] = useState(
-    segment ? formatTimeMs(segment.start_time) : "0:00.00"
+    segment ? formatTimeMs(segment.start_time) : formatTimeMs(initialStartTime)
   );
   const [endTime, setEndTime] = useState(
-    segment ? formatTimeMs(segment.end_time) : "0:10.00"
+    segment ? formatTimeMs(segment.end_time) : formatTimeMs(initialEndTime)
   );
   const [loopGap, setLoopGap] = useState(String(segment?.loop_gap ?? 0));
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSaving) return;
     const start = parseTimeInput(startTime);
     const end = parseTimeInput(endTime);
     if (end <= start) return;
-    onSave({
+    await onSave({
       label: label.trim(),
       start_time: start,
       end_time: end,
@@ -132,13 +143,15 @@ export function SegmentEditor({ segment, onSave, onCancel }: SegmentEditorProps)
         <button
           type="submit"
           className="btn-primary"
+          disabled={isSaving}
         >
-          {segment ? "Update" : "Add"} Segment
+          {isSaving ? "Saving..." : `${segment ? "Update" : "Add"} Segment`}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="btn-ghost"
+          disabled={isSaving}
         >
           Cancel
         </button>
