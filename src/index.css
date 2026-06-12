@@ -188,6 +188,17 @@
     color: var(--text-primary);
   }
 
+  .icon-button-active {
+    background-color: var(--nav-active-bg);
+    color: var(--nav-active-text);
+    box-shadow: 0 10px 22px rgba(17, 18, 20, 0.08);
+  }
+
+  .icon-button-active:hover {
+    background-color: var(--nav-active-bg);
+    color: var(--nav-active-text);
+  }
+
   .drag-handle {
     @apply flex h-10 w-7 shrink-0 items-center justify-center rounded-xl;
     color: var(--text-muted);

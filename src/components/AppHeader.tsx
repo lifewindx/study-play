@@ -1,11 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { UserIcon } from "./Icons";
-
-const navItems = [
-  { to: "/classes", label: "Library" },
-  { to: "/calendar", label: "Calendar" },
-];
+import { CalendarIcon, UserIcon } from "./Icons";
 
 export function AppHeader() {
   const { user } = useAuth();
@@ -35,25 +30,21 @@ export function AppHeader() {
           </div>
         </NavLink>
 
-        <nav className="flex items-center gap-1 rounded-lg border p-1" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/classes"}
-              className={({ isActive }) =>
-                `nav-link ${isActive ? "nav-link-active" : ""}`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
         <div className="flex items-center gap-2">
           <NavLink
+            to="/calendar"
+            className={({ isActive }) =>
+              `icon-button ${isActive ? "icon-button-active" : ""}`
+            }
+            aria-label="Calendar"
+          >
+            <CalendarIcon className="h-5 w-5" />
+          </NavLink>
+          <NavLink
             to="/mypage"
-            className="icon-button"
+            className={({ isActive }) =>
+              `icon-button ${isActive ? "icon-button-active" : ""}`
+            }
             aria-label="My page"
           >
             <UserIcon className="h-5 w-5" />

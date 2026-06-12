@@ -189,6 +189,22 @@ export function ChevronRightIcon(props: IconProps) {
   );
 }
 
+export function CalendarIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 3v3" />
+      <path d="M17 3v3" />
+      <path d="M4 8h16" />
+      <path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+      <path d="M8 12h.01" />
+      <path d="M12 12h.01" />
+      <path d="M16 12h.01" />
+      <path d="M8 16h.01" />
+      <path d="M12 16h.01" />
+    </IconBase>
+  );
+}
+
 export function UserIcon(props: IconProps) {
   return (
     <IconBase {...props}>
