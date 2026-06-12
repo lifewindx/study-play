@@ -124,9 +124,12 @@ class SupabaseDB implements StudyDb {
     if (normalized.includes("FROM study_sessions ss JOIN lessons l")) {
       const startDate = String(bindValues[0]);
       const endDate = bindValues.length > 1 ? String(bindValues[1]) : null;
+      const classId = bindValues.length > 2 && bindValues[2] !== null
+        ? Number(bindValues[2])
+        : null;
       let query = supabase
         .from("study_sessions")
-        .select("*, lessons!inner(title, classes!inner(title))")
+        .select("*, lessons!inner(title, class_id, classes!inner(title))")
         .order("started_at", { ascending: false });
 
       if (endDate) {
@@ -135,13 +138,18 @@ class SupabaseDB implements StudyDb {
         query = query.gte("started_at", startDate).lte("started_at", startDate + "T23:59:59");
       }
 
+      if (classId !== null) {
+        query = query.eq("lessons.class_id", classId);
+      }
+
       const { data, error } = await query;
       if (error) throw error;
       const rows = (data ?? [])
         .filter((s) => s.lessons && s.lessons.classes)
         .map((s) => ({
           ...s,
-          lesson_title: (s.lessons as { title: string }).title ?? "",
+          lesson_title: (s.lessons as { title: string; class_id: number }).title ?? "",
+          class_id: (s.lessons as { title: string; class_id: number }).class_id,
           class_title: ((s.lessons as { classes: { title: string } }).classes as { title: string }).title ?? "",
         }));
       return rows as T;
