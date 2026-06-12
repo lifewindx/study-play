@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
-import { getDb } from "../lib/db";
+import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { GripIcon, HomeIcon, PencilIcon, TrashIcon } from "../components/Icons";
 
@@ -30,6 +30,7 @@ export function LessonPage() {
       "SELECT * FROM lessons WHERE class_id = $1 ORDER BY sort_order, id",
       [Number(classId)]
     );
+    await ensureAllSegmentsForLessons(lessonRows.map((lesson) => lesson.id));
     setLessons(lessonRows);
   }, [classId]);
 

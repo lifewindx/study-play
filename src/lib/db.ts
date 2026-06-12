@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Segment } from "../types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -22,6 +23,52 @@ export async function getDb(): Promise<StudyDb> {
   if (db) return db;
   db = new SupabaseDB();
   return db;
+}
+
+type SegmentSeedRow = Pick<Segment, "lesson_id" | "label" | "start_time" | "end_time" | "sort_order">;
+
+function isAllSegment(segment: Pick<Segment, "label" | "start_time" | "end_time">): boolean {
+  return segment.label === "All" && segment.start_time === 0 && segment.end_time === 0;
+}
+
+export async function ensureAllSegmentsForLessons(lessonIds: number[]): Promise<number> {
+  const uniqueLessonIds = [...new Set(lessonIds)].filter((id) => Number.isFinite(id));
+  if (uniqueLessonIds.length === 0) return 0;
+
+  const { data: existingSegments, error: selectError } = await supabase
+    .from("segments")
+    .select("lesson_id,label,start_time,end_time,sort_order")
+    .in("lesson_id", uniqueLessonIds);
+  if (selectError) throw selectError;
+
+  const segmentsByLessonId = new Map<number, SegmentSeedRow[]>();
+  for (const segment of (existingSegments ?? []) as SegmentSeedRow[]) {
+    const list = segmentsByLessonId.get(segment.lesson_id) ?? [];
+    list.push(segment);
+    segmentsByLessonId.set(segment.lesson_id, list);
+  }
+
+  const userId = await getUserId();
+  const inserts = uniqueLessonIds
+    .filter((lessonId) => !(segmentsByLessonId.get(lessonId) ?? []).some(isAllSegment))
+    .map((lessonId) => {
+      const sortOrders = (segmentsByLessonId.get(lessonId) ?? []).map((segment) => segment.sort_order);
+      return {
+        user_id: userId,
+        lesson_id: lessonId,
+        label: "All",
+        start_time: 0,
+        end_time: 0,
+        loop_gap: 0,
+        sort_order: sortOrders.length > 0 ? Math.min(...sortOrders) - 1 : 0,
+      };
+    });
+
+  if (inserts.length === 0) return 0;
+
+  const { error: insertError } = await supabase.from("segments").insert(inserts);
+  if (insertError) throw insertError;
+  return inserts.length;
 }
 
 class SupabaseDB implements StudyDb {

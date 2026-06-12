@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson, Segment } from "../types";
-import { getDb } from "../lib/db";
+import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { VideoPlayer, type VideoPlayerHandle } from "../components/VideoPlayer";
 import { SegmentList } from "../components/SegmentList";
 import { SegmentEditor } from "../components/SegmentEditor";
@@ -52,6 +52,10 @@ export function PlayerPage() {
       [Number(lessonId)]
     );
     setLesson(lessonRow ?? null);
+    if (!lessonRow) {
+      setSegments([]);
+      return;
+    }
     if (lessonRow) {
       const [classRow] = await db.select<Class[]>(
         "SELECT * FROM classes WHERE id = $1",
@@ -59,10 +63,17 @@ export function PlayerPage() {
       );
       setClassTitle(classRow?.title ?? "");
     }
-    const segmentRows = await db.select<Segment[]>(
+    let segmentRows = await db.select<Segment[]>(
       "SELECT * FROM segments WHERE lesson_id = $1 ORDER BY sort_order, id",
       [Number(lessonId)]
     );
+    const insertedCount = await ensureAllSegmentsForLessons([Number(lessonId)]);
+    if (insertedCount > 0) {
+      segmentRows = await db.select<Segment[]>(
+        "SELECT * FROM segments WHERE lesson_id = $1 ORDER BY sort_order, id",
+        [Number(lessonId)]
+      );
+    }
     setSegments(segmentRows);
   }, [lessonId]);
 
