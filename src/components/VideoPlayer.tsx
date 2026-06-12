@@ -13,6 +13,7 @@ interface VideoPlayerProps {
   flipH: boolean;
   flipV: boolean;
   onTimeUpdate?: (currentTime: number) => void;
+  onDurationChange?: (duration: number) => void;
   segmentKey?: number;
   playCommand?: number;
   pauseCommand?: number;
@@ -138,6 +139,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   flipH,
   flipV,
   onTimeUpdate,
+  onDurationChange,
   segmentKey,
   playCommand,
   pauseCommand,
@@ -154,7 +156,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const endTimeRef = useRef(endTime);
   const loopGapRef = useRef(loopGap);
   const onTimeUpdateRef = useRef(onTimeUpdate);
+  const onDurationChangeRef = useRef(onDurationChange);
   const lastKnownTimeRef = useRef(0);
+  const lastKnownDurationRef = useRef(0);
   const [rotatedFitScale, setRotatedFitScale] = useState(1);
 
   isPlayingRef.current = isPlaying;
@@ -163,6 +167,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   endTimeRef.current = endTime;
   loopGapRef.current = loopGap;
   onTimeUpdateRef.current = onTimeUpdate;
+  onDurationChangeRef.current = onDurationChange;
 
   const videoId = videoType === "youtube" ? extractYoutubeId(videoUrl) : null;
 
@@ -213,6 +218,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
         const ct = playerRef.current.getCurrentTime();
         lastKnownTimeRef.current = ct;
         onTimeUpdateRef.current?.(ct);
+        emitDuration();
       } catch {}
     };
     poll();
@@ -224,6 +230,18 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       clearInterval(pollTimerRef.current);
       pollTimerRef.current = null;
     }
+  }
+
+  function emitDuration() {
+    const p = playerRef.current;
+    if (!p) return;
+    try {
+      const duration = p.getDuration();
+      if (!Number.isFinite(duration) || duration <= 0) return;
+      if (Math.abs(duration - lastKnownDurationRef.current) < 0.25) return;
+      lastKnownDurationRef.current = duration;
+      onDurationChangeRef.current?.(duration);
+    } catch {}
   }
 
   useImperativeHandle(ref, () => ({
@@ -262,6 +280,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   }));
 
   useEffect(() => {
+    lastKnownDurationRef.current = 0;
     if (videoType !== "youtube" || !videoId) return;
     const host = hostRef.current;
     if (!host) return;
@@ -294,6 +313,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             onReady: () => {
               playerRef.current = player;
               try { player.setPlaybackRate(speedRef.current); } catch {}
+              emitDuration();
+              window.setTimeout(emitDuration, 500);
+              window.setTimeout(emitDuration, 1500);
               if (isPlayingRef.current) {
                 if (startTimeRef.current > 0) player.seekTo(startTimeRef.current, true);
                 player.playVideo();
@@ -304,6 +326,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             onStateChange: (e: Record<string, unknown>) => {
               const state = e.data as number;
               if (state === (window.YT?.PlayerState.PLAYING ?? 1)) {
+                emitDuration();
                 startPolling();
               } else {
                 stopPolling();
@@ -376,6 +399,15 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     p.seekTo(startTime, true);
     scheduleLoop();
   }, [segmentKey]);
+
+  useEffect(() => {
+    const p = playerRef.current;
+    if (!p || videoType !== "youtube" || !isPlaying) return;
+    if (!(endTime > 0 && startTime < endTime)) return;
+    clearLoopTimer();
+    if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
+    scheduleLoop();
+  }, [startTime, endTime, loopGap]);
 
   useEffect(() => {
     if (!playerRef.current || videoType !== "youtube") return;

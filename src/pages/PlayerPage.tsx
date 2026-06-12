@@ -37,12 +37,14 @@ export function PlayerPage() {
   const [flipH, setFlipH] = useState(false);
   const [flipV, setFlipV] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonVideoUrl, setLessonVideoUrl] = useState("");
   const [playCommand, setPlayCommand] = useState(0);
   const [pauseCommand, setPauseCommand] = useState(0);
+  const hydratedAllSegmentIdsRef = useRef<Set<number>>(new Set());
 
   const loadData = useCallback(async () => {
     if (!lessonId) return;
@@ -82,6 +84,12 @@ export function PlayerPage() {
   }, [loadData]);
 
   useEffect(() => {
+    setVideoDuration(0);
+    setCurrentTime(0);
+    hydratedAllSegmentIdsRef.current.clear();
+  }, [lessonId]);
+
+  useEffect(() => {
     function onFullscreenChange() {
       const nowFullscreen = !!document.fullscreenElement;
       setIsFullscreen(nowFullscreen);
@@ -111,7 +119,7 @@ export function PlayerPage() {
       if (!activeSegment) {
         setActiveSegment(segment);
       }
-      videoRef.current?.playSegment(segment.start_time, segment.end_time, segment.loop_gap);
+      videoRef.current?.playSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
       recordSession();
       setPlayCommand((value) => value + 1);
     } else {
@@ -124,7 +132,7 @@ export function PlayerPage() {
   function handleSelectSegment(seg: Segment) {
     setActiveSegment(seg);
     setIsPlaying(true);
-    videoRef.current?.playSegment(seg.start_time, seg.end_time, seg.loop_gap);
+    videoRef.current?.playSegment(seg.start_time, getSegmentEndTime(seg), seg.loop_gap);
     setPlayCommand((value) => value + 1);
     recordSession();
   }
@@ -237,9 +245,46 @@ export function PlayerPage() {
     setCurrentTime(time);
   }
 
+  const handleDurationChange = useCallback(async (duration: number) => {
+    if (!Number.isFinite(duration) || duration <= 0) return;
+    const normalizedDuration = Math.round(duration * 100) / 100;
+    setVideoDuration(normalizedDuration);
+
+    const allSegment = segments.find(isAllPlaceholderSegment);
+    if (!allSegment || hydratedAllSegmentIdsRef.current.has(allSegment.id)) return;
+
+    hydratedAllSegmentIdsRef.current.add(allSegment.id);
+    const hydratedSegment = { ...allSegment, end_time: normalizedDuration };
+    setSegments((currentSegments) =>
+      currentSegments.map((segment) => segment.id === allSegment.id ? hydratedSegment : segment)
+    );
+    setActiveSegment((currentSegment) =>
+      currentSegment?.id === allSegment.id ? hydratedSegment : currentSegment
+    );
+
+    try {
+      const db = await getDb();
+      await db.execute(
+        `UPDATE segments SET label = $1, start_time = $2, end_time = $3, loop_gap = $4,
+         updated_at = datetime('now','localtime') WHERE id = $5`,
+        [allSegment.label, allSegment.start_time, normalizedDuration, allSegment.loop_gap, allSegment.id]
+      );
+    } catch (error) {
+      hydratedAllSegmentIdsRef.current.delete(allSegment.id);
+      console.error(error);
+    }
+  }, [segments]);
+
+  function getSegmentEndTime(segment: Segment): number {
+    if (segment.end_time > segment.start_time) return segment.end_time;
+    if (isAllPlaceholderSegment(segment) && videoDuration > segment.start_time) return videoDuration;
+    return segment.end_time;
+  }
+
   function seekWithinActiveSegment(ratio: number) {
     if (!activeSegment) return;
-    const segmentDuration = activeSegment.end_time - activeSegment.start_time;
+    const segmentEndTime = getSegmentEndTime(activeSegment);
+    const segmentDuration = segmentEndTime - activeSegment.start_time;
     if (segmentDuration <= 0) return;
     const clampedRatio = Math.max(0, Math.min(1, ratio));
     const nextTime = activeSegment.start_time + segmentDuration * clampedRatio;
@@ -255,7 +300,7 @@ export function PlayerPage() {
 
   function handleProgressKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (!activeSegment) return;
-    const duration = activeSegment.end_time - activeSegment.start_time;
+    const duration = getSegmentEndTime(activeSegment) - activeSegment.start_time;
     const currentRatio = duration > 0 ? (currentTime - activeSegment.start_time) / duration : 0;
     if (e.key === "ArrowLeft") {
       e.preventDefault();
@@ -320,7 +365,9 @@ export function PlayerPage() {
   }
 
   const lastSegment = segments.length > 0 ? segments[segments.length - 1] : null;
-  const newSegmentStartTime = activeSegment?.end_time ?? lastSegment?.end_time ?? 0;
+  const activeSegmentEndTime = activeSegment ? getSegmentEndTime(activeSegment) : 0;
+  const activeSegmentDuration = activeSegment ? activeSegmentEndTime - activeSegment.start_time : 0;
+  const newSegmentStartTime = activeSegment ? activeSegmentEndTime : lastSegment ? getSegmentEndTime(lastSegment) : 0;
   const newSegmentEndTime = newSegmentStartTime + 10;
 
   return (
@@ -358,7 +405,7 @@ export function PlayerPage() {
               videoType={lesson.video_type}
               videoUrl={lesson.video_url}
               startTime={activeSegment?.start_time ?? 0}
-              endTime={activeSegment?.end_time ?? 0}
+              endTime={activeSegmentEndTime}
               loopGap={activeSegment?.loop_gap ?? 0}
               isPlaying={isPlaying}
               speed={speed}
@@ -366,6 +413,7 @@ export function PlayerPage() {
               flipH={flipH}
               flipV={flipV}
               onTimeUpdate={handleTimeUpdate}
+              onDurationChange={handleDurationChange}
               segmentKey={activeSegment?.id}
               playCommand={playCommand}
               pauseCommand={pauseCommand}
@@ -390,7 +438,7 @@ export function PlayerPage() {
               tabIndex={activeSegment ? 0 : -1}
               aria-label="Segment progress"
               aria-valuemin={activeSegment?.start_time ?? 0}
-              aria-valuemax={activeSegment?.end_time ?? 0}
+              aria-valuemax={activeSegmentEndTime}
               aria-valuenow={currentTime}
             >
               <div
@@ -402,7 +450,7 @@ export function PlayerPage() {
                         Math.min(
                           100,
                           ((currentTime - activeSegment.start_time) /
-                            Math.max(activeSegment.end_time - activeSegment.start_time, 0.1)) *
+                            Math.max(activeSegmentDuration, 0.1)) *
                             100
                         )
                       )}%`
@@ -423,7 +471,7 @@ export function PlayerPage() {
                     {activeSegment.label || `Seg ${segments.indexOf(activeSegment) + 1}`}
                   </div>
                   <div className="text-xs font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {formatTimeShort(currentTime)} / {formatTimeShort(activeSegment.end_time)}
+                    {formatTimeShort(currentTime)} / {formatTimeShort(activeSegmentEndTime)}
                   </div>
                 </div>
               ) : (
@@ -602,4 +650,8 @@ function formatTimeShort(seconds: number): string {
   const s = Math.floor(seconds % 60);
   const ms = Math.floor((seconds % 1) * 100);
   return `${m}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
+}
+
+function isAllPlaceholderSegment(segment: Segment): boolean {
+  return segment.label === "All" && segment.start_time === 0 && segment.end_time === 0;
 }
