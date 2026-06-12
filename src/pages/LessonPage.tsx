@@ -109,7 +109,7 @@ export function LessonPage() {
         "SELECT COALESCE(MAX(sort_order), -1) + 1 as max FROM lessons WHERE class_id = $1",
         [Number(classId)]
       );
-      await db.execute(
+      const result = await db.execute(
         `INSERT INTO lessons (class_id, title, video_url, video_type, sort_order)
          VALUES ($1, $2, $3, $4, $5)`,
         [
@@ -120,6 +120,14 @@ export function LessonPage() {
           maxOrder[0]?.max ?? 0,
         ]
       );
+      const lessonId = (result as { lastInsertId?: number }).lastInsertId;
+      if (lessonId !== undefined) {
+        await db.execute(
+          `INSERT INTO segments (lesson_id, label, start_time, end_time, loop_gap, sort_order)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [lessonId, "All", 0, 0, 0, 0]
+        );
+      }
     }
     closeForm();
     await loadData();

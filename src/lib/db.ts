@@ -176,16 +176,20 @@ class SupabaseDB implements StudyDb {
     }
 
     if (normalized.startsWith("INSERT INTO lessons")) {
-      const { error } = await supabase.from("lessons").insert({
-        user_id: userId,
-        class_id: Number(bindValues[0]),
-        title: String(bindValues[1]),
-        video_url: String(bindValues[2]),
-        video_type: bindValues[3] === "local" ? "local" : "youtube",
-        sort_order: Number(bindValues[4] ?? 0),
-      });
+      const { data, error } = await supabase
+        .from("lessons")
+        .insert({
+          user_id: userId,
+          class_id: Number(bindValues[0]),
+          title: String(bindValues[1]),
+          video_url: String(bindValues[2]),
+          video_type: bindValues[3] === "local" ? "local" : "youtube",
+          sort_order: Number(bindValues[4] ?? 0),
+        })
+        .select("id")
+        .single();
       if (error) throw error;
-      return { rowsAffected: 1 };
+      return { rowsAffected: 1, lastInsertId: data.id };
     }
 
     if (normalized.startsWith("INSERT INTO segments")) {
