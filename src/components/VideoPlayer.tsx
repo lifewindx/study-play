@@ -48,6 +48,7 @@ function getYoutubeOrigin(): string | null {
 function buildYoutubeEmbedSrc(videoId: string): string {
   const params = new URLSearchParams({
     autoplay: "0",
+    cc_load_policy: "0",
     controls: "0",
     disablekb: "1",
     enablejsapi: "1",
@@ -284,6 +285,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     iframe.style.width = "100%";
     iframe.style.height = "100%";
     iframe.style.border = "0";
+    iframe.style.pointerEvents = "none";
+    iframe.tabIndex = -1;
     host.appendChild(iframe);
 
     loadYTAPI().then(() => {
@@ -431,8 +434,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       </div>
       {videoType === "youtube" && videoId && (
         <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black to-transparent" />
+          <div className="absolute inset-0 z-[1]" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-12 bg-gradient-to-b from-black to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-10 bg-gradient-to-t from-black to-transparent" />
         </>
       )}
     </div>
