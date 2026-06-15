@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Class, StudySession } from "../types";
-import { getDb } from "../lib/db";
+import { getDb, getRoutineCompletionCounts } from "../lib/db";
 import { ChevronLeftIcon, ChevronRightIcon } from "../components/Icons";
 
 interface SessionRow extends StudySession {
@@ -13,6 +13,7 @@ interface DayData {
   date: string;
   totalMinutes: number;
   sessionCount: number;
+  routineCount: number;
 }
 
 interface CalendarCell {
@@ -95,6 +96,11 @@ function getCellColor(level: number): string {
   }
 }
 
+function getRoutineIntensity(routineCount: number): number {
+  if (routineCount <= 0) return 0;
+  return Math.min(4, routineCount);
+}
+
 export function CalendarPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [classes, setClasses] = useState<Class[]>([]);
@@ -115,16 +121,19 @@ export function CalendarPage() {
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
 
-    const rows = await db.select<SessionRow[]>(
-      `SELECT ss.*, l.title as lesson_title, l.class_id as class_id, c.title as class_title
-       FROM study_sessions ss
-       JOIN lessons l ON l.id = ss.lesson_id
-       JOIN classes c ON c.id = l.class_id
-       WHERE date(ss.started_at) >= $1 AND date(ss.started_at) <= $2
-         AND ($3 IS NULL OR c.id = $3)
-       ORDER BY ss.started_at DESC`,
-      [startDate, endDate, selectedClassId]
-    );
+    const [rows, routineCounts] = await Promise.all([
+      db.select<SessionRow[]>(
+        `SELECT ss.*, l.title as lesson_title, l.class_id as class_id, c.title as class_title
+         FROM study_sessions ss
+         JOIN lessons l ON l.id = ss.lesson_id
+         JOIN classes c ON c.id = l.class_id
+         WHERE date(ss.started_at) >= $1 AND date(ss.started_at) <= $2
+           AND ($3 IS NULL OR c.id = $3)
+         ORDER BY ss.started_at DESC`,
+        [startDate, endDate, selectedClassId]
+      ),
+      getRoutineCompletionCounts(startDate, endDate),
+    ]);
 
     const dayMap = new Map<string, DayData>();
     for (const row of rows) {
@@ -134,11 +143,24 @@ export function CalendarPage() {
           date: dateKey,
           totalMinutes: 0,
           sessionCount: 0,
+          routineCount: 0,
         });
       }
       const entry = dayMap.get(dateKey)!;
       entry.totalMinutes += Math.round(row.duration_seconds / 60);
       entry.sessionCount += 1;
+    }
+
+    for (const [date, routineCount] of routineCounts) {
+      if (!dayMap.has(date)) {
+        dayMap.set(date, {
+          date,
+          totalMinutes: 0,
+          sessionCount: 0,
+          routineCount: 0,
+        });
+      }
+      dayMap.get(date)!.routineCount = routineCount;
     }
 
     setDays(Array.from(dayMap.values()));
@@ -277,7 +299,7 @@ export function CalendarPage() {
             <div className="flex gap-2">
               <div className="grid grid-rows-7 gap-1 pt-px text-right text-xs" style={{ color: "var(--text-muted)" }}>
                 {dayLabels.map((label, index) => (
-                  <span key={index} className="h-3 leading-3">
+                  <span key={index} className="h-4 leading-4">
                     {label}
                   </span>
                 ))}
@@ -288,9 +310,13 @@ export function CalendarPage() {
                   <div key={weekIndex} className="grid grid-rows-7 gap-1">
                     {week.map((cell) => {
                       const data = dayMap.get(cell.date);
-                      const level = getIntensity(data?.totalMinutes ?? 0);
+                      const level = Math.max(
+                        getIntensity(data?.totalMinutes ?? 0),
+                        data?.sessionCount ? 1 : 0,
+                        getRoutineIntensity(data?.routineCount ?? 0)
+                      );
                       const isToday = cell.date === today;
-                      const isClickable = cell.inYear && data;
+                      const isClickable = cell.inYear && Boolean(data);
 
                       return (
                         <button
@@ -300,19 +326,26 @@ export function CalendarPage() {
                           disabled={!isClickable}
                           title={
                             data
-                              ? `${cell.date}: ${formatMin(data.totalMinutes)} in ${data.sessionCount} sessions`
+                              ? `${cell.date}: ${formatMin(data.totalMinutes)} in ${data.sessionCount} sessions, ${data.routineCount} routines`
                               : cell.inYear
                                 ? `${cell.date}: no practice`
                                 : ""
                           }
-                          className="h-3 rounded-[3px] border transition-transform enabled:hover:scale-110"
+                          className="flex h-4 items-center justify-center rounded-[3px] border text-[9px] font-semibold leading-none transition-transform enabled:hover:scale-110"
                           style={{
                             backgroundColor: cell.inYear ? getCellColor(level) : "transparent",
                             borderColor: isToday ? "var(--accent)" : cell.inYear ? "var(--border-color)" : "transparent",
                             cursor: isClickable ? "pointer" : "default",
+                            color: level >= 3 ? "white" : "var(--text-primary)",
                           }}
-                          aria-label={data ? `${cell.date}, ${formatMin(data.totalMinutes)}` : `${cell.date}, no practice`}
-                        />
+                          aria-label={
+                            data
+                              ? `${cell.date}, ${formatMin(data.totalMinutes)}, ${data.routineCount} routines`
+                              : `${cell.date}, no practice`
+                          }
+                        >
+                          {data?.routineCount ? data.routineCount : ""}
+                        </button>
                       );
                     })}
                   </div>
@@ -349,6 +382,11 @@ export function CalendarPage() {
                 <ChevronRightIcon className="h-5 w-5 rotate-90" />
               </button>
             </div>
+            {selectedDate && dayMap.get(selectedDate)?.routineCount ? (
+              <div className="mb-3 rounded-lg border p-3 text-sm" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)" }}>
+                Routine completed: {dayMap.get(selectedDate)?.routineCount}
+              </div>
+            ) : null}
             {loadingDetail ? (
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</p>
             ) : selectedSessions.length === 0 ? (

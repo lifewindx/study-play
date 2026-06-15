@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { RoutineItem, Segment } from "../types";
+import type { RoutineCompletion, RoutineItem, Segment } from "../types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -465,6 +465,21 @@ function getRoutineResetStart(now = new Date()): Date {
   return reset;
 }
 
+function formatRoutineDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getRoutineDate(now = new Date()): string {
+  return formatRoutineDate(getRoutineResetStart(now));
+}
+
+function isMissingRoutineCompletionsTable(error: { code?: string } | null): boolean {
+  return error?.code === "PGRST205";
+}
+
 export async function ensureRoutineItems(): Promise<RoutineItem[]> {
   const db = await getDb();
   let rows = await db.select<RoutineItem[]>("SELECT * FROM routine_items ORDER BY sort_order, id");
@@ -503,7 +518,56 @@ export async function ensureRoutineItems(): Promise<RoutineItem[]> {
   return rows;
 }
 
+export async function recordRoutineCompletion(routineItemId: number, completedAt = new Date()): Promise<void> {
+  const userId = await getUserId();
+  const routineDate = getRoutineDate(completedAt);
+  const { error } = await supabase
+    .from("routine_completions")
+    .upsert(
+      {
+        user_id: userId,
+        routine_item_id: routineItemId,
+        routine_date: routineDate,
+        completed_at: completedAt.toISOString(),
+      },
+      { onConflict: "user_id,routine_item_id,routine_date" }
+    );
+  if (isMissingRoutineCompletionsTable(error)) return;
+  if (error) throw error;
+}
+
+export async function deleteRoutineCompletion(routineItemId: number, now = new Date()): Promise<void> {
+  const routineDate = getRoutineDate(now);
+  const { error } = await supabase
+    .from("routine_completions")
+    .delete()
+    .eq("routine_item_id", routineItemId)
+    .eq("routine_date", routineDate);
+  if (isMissingRoutineCompletionsTable(error)) return;
+  if (error) throw error;
+}
+
+export async function getRoutineCompletionCounts(startDate: string, endDate: string): Promise<Map<string, number>> {
+  const { data, error } = await supabase
+    .from("routine_completions")
+    .select("routine_date")
+    .gte("routine_date", startDate)
+    .lte("routine_date", endDate);
+  if (isMissingRoutineCompletionsTable(error)) return new Map();
+  if (error) throw error;
+
+  const counts = new Map<string, number>();
+  for (const row of (data ?? []) as Pick<RoutineCompletion, "routine_date">[]) {
+    counts.set(row.routine_date, (counts.get(row.routine_date) ?? 0) + 1);
+  }
+  return counts;
+}
+
 export async function clearAllUserData(): Promise<void> {
+  const { error: routineCompletionDeleteError } = await supabase.from("routine_completions").delete().gt("id", 0);
+  if (routineCompletionDeleteError && !isMissingRoutineCompletionsTable(routineCompletionDeleteError)) {
+    throw routineCompletionDeleteError;
+  }
   await supabase.from("routine_items").delete().gt("id", 0);
   await supabase.from("study_sessions").delete().gt("id", 0);
   await supabase.from("segments").delete().gt("id", 0);

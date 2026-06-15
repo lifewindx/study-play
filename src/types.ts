@@ -51,4 +51,12 @@ export interface RoutineItem {
   updated_at: string;
 }
 
+export interface RoutineCompletion {
+  id: number;
+  routine_item_id: number;
+  routine_date: string;
+  completed_at: string;
+  created_at: string;
+}
+
 export type Theme = "light" | "dark";

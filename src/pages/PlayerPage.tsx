@@ -18,6 +18,12 @@ import {
   TrashIcon,
 } from "../components/Icons";
 
+interface ActiveStudySession {
+  lessonId: number;
+  segmentId: number | null;
+  startedAt: Date;
+}
+
 export function PlayerPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
@@ -45,6 +51,7 @@ export function PlayerPage() {
   const [playCommand, setPlayCommand] = useState(0);
   const [pauseCommand, setPauseCommand] = useState(0);
   const hydratedAllSegmentIdsRef = useRef<Set<number>>(new Set());
+  const activeStudySessionRef = useRef<ActiveStudySession | null>(null);
 
   const loadData = useCallback(async () => {
     if (!lessonId) return;
@@ -101,18 +108,49 @@ export function PlayerPage() {
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  const recordSession = useCallback(async () => {
-    if (!lessonId) return;
+  const finishStudySession = useCallback(async () => {
+    const session = activeStudySessionRef.current;
+    if (!session) return;
+    activeStudySessionRef.current = null;
+
+    const endedAt = new Date();
+    const durationSeconds = Math.max(1, Math.round((endedAt.getTime() - session.startedAt.getTime()) / 1000));
+    if (durationSeconds <= 0) return;
+
     const db = await getDb();
-    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     await db.execute(
       `INSERT INTO study_sessions (lesson_id, segment_id, started_at, ended_at, duration_seconds)
        VALUES ($1, $2, $3, $4, $5)`,
-      [Number(lessonId), activeSegment?.id ?? null, now, now, 0]
+      [
+        session.lessonId,
+        session.segmentId,
+        session.startedAt.toISOString(),
+        endedAt.toISOString(),
+        durationSeconds,
+      ]
     );
-  }, [lessonId, activeSegment]);
+  }, []);
 
-  function handlePlayPause() {
+  const startStudySession = useCallback(
+    async (segment: Segment | null) => {
+      await finishStudySession();
+      if (!lessonId) return;
+      activeStudySessionRef.current = {
+        lessonId: Number(lessonId),
+        segmentId: segment?.id ?? null,
+        startedAt: new Date(),
+      };
+    },
+    [finishStudySession, lessonId]
+  );
+
+  useEffect(() => {
+    return () => {
+      finishStudySession().catch((error) => console.error(error));
+    };
+  }, [finishStudySession]);
+
+  async function handlePlayPause() {
     if (segments.length === 0) return;
     if (!isPlaying) {
       const segment = activeSegment ?? segments[0];
@@ -120,21 +158,25 @@ export function PlayerPage() {
         setActiveSegment(segment);
       }
       videoRef.current?.playSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
-      recordSession();
+      await startStudySession(segment);
       setPlayCommand((value) => value + 1);
     } else {
       videoRef.current?.pause();
       setPauseCommand((value) => value + 1);
+      await finishStudySession();
     }
     setIsPlaying(!isPlaying);
   }
 
-  function handleSelectSegment(seg: Segment) {
+  async function handleSelectSegment(seg: Segment) {
+    if (isPlaying) {
+      await finishStudySession();
+    }
     setActiveSegment(seg);
     setIsPlaying(true);
     videoRef.current?.playSegment(seg.start_time, getSegmentEndTime(seg), seg.loop_gap);
     setPlayCommand((value) => value + 1);
-    recordSession();
+    await startStudySession(seg);
   }
 
   async function handleSaveSegment(data: {

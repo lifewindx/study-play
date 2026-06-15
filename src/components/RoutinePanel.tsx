@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { RoutineItem } from "../types";
-import { ensureRoutineItems, getDb } from "../lib/db";
+import { deleteRoutineCompletion, ensureRoutineItems, getDb, recordRoutineCompletion } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { CheckIcon, GripIcon, PlusIcon, TrashIcon, XIcon } from "./Icons";
 
@@ -68,7 +68,8 @@ export function RoutinePanel() {
   }
 
   async function handleToggle(item: RoutineItem) {
-    const nextCompletedAt = item.completed_at ? null : new Date().toISOString();
+    const completedAt = new Date();
+    const nextCompletedAt = item.completed_at ? null : completedAt.toISOString();
     const next = items.map((current) =>
       current.id === item.id ? { ...current, completed_at: nextCompletedAt } : current
     );
@@ -80,7 +81,14 @@ export function RoutinePanel() {
         nextCompletedAt,
         item.id,
       ]);
+      if (nextCompletedAt) {
+        await recordRoutineCompletion(item.id, completedAt);
+      } else {
+        await deleteRoutineCompletion(item.id);
+      }
+      setError(null);
     } catch {
+      setError("Could not update routine.");
       await loadItems();
     }
   }
