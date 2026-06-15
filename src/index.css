@@ -228,15 +228,15 @@
   }
 
   .routine-panel {
-    @apply fixed bottom-5 right-5 z-30 w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border p-4;
+    @apply fixed right-4 top-[5.5rem] z-30 w-[min(11rem,calc(100vw-2rem))] rounded-xl border p-2.5;
     background-color: var(--surface-soft);
     border-color: var(--border-color);
-    box-shadow: var(--shadow-soft);
+    box-shadow: 0 14px 32px rgba(17, 18, 20, 0.14);
     backdrop-filter: blur(18px);
   }
 
   .routine-item {
-    @apply flex min-h-11 items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors;
+    @apply flex min-h-8 items-center gap-1.5 rounded-lg border px-1.5 py-1 transition-colors;
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
   }
@@ -246,7 +246,7 @@
   }
 
   .routine-check {
-    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors;
+    @apply flex h-[1.125rem] w-[1.125rem] shrink-0 items-center justify-center rounded-full border transition-colors;
     border-color: var(--border-color);
     color: var(--accent-contrast);
   }
@@ -257,13 +257,20 @@
   }
 
   .routine-title {
-    @apply min-w-0 flex-1 break-words text-sm leading-snug;
+    @apply min-w-0 flex-1 break-words text-[11px] leading-tight;
     color: var(--text-primary);
   }
 
   .routine-title-done {
     color: var(--text-muted);
     text-decoration: line-through;
+  }
+
+  @media (min-width: 88rem) {
+    .routine-panel {
+      left: calc(50% + 36rem + 1rem);
+      right: auto;
+    }
   }
 
   .player-panel {

@@ -131,18 +131,18 @@ export function RoutinePanel() {
 
   return (
     <aside className="routine-panel">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
             Routine
           </div>
-          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+          <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
             {completedCount}/{items.length} done
           </div>
         </div>
         <button
           type="button"
-          className="icon-button"
+          className="icon-button h-7 w-7"
           onClick={() => setIsAdding((value) => !value)}
           aria-label={isAdding ? "Close routine form" : "Add routine"}
         >
@@ -152,7 +152,7 @@ export function RoutinePanel() {
 
       {isAdding && (
         <form
-          className="mb-3 flex gap-2"
+          className="mb-2 grid gap-1.5"
           onSubmit={(event) => {
             event.preventDefault();
             handleAdd();
@@ -160,26 +160,26 @@ export function RoutinePanel() {
         >
           <input
             type="text"
-            className="input-field min-w-0 flex-1"
+            className="input-field min-w-0 px-2 py-1 text-xs"
             value={newTitle}
             onChange={(event) => setNewTitle(event.target.value)}
             placeholder="New routine"
             maxLength={80}
             autoFocus
           />
-          <button type="submit" className="btn-primary px-3">
+          <button type="submit" className="btn-primary px-2 py-1 text-xs">
             Add
           </button>
         </form>
       )}
 
       {error && (
-        <div className="mb-3 rounded-xl border px-3 py-2 text-xs" style={{ borderColor: "var(--border-color)", color: "var(--warning)" }}>
+        <div className="mb-2 rounded-lg border px-2 py-1.5 text-[10px]" style={{ borderColor: "var(--border-color)", color: "var(--warning)" }}>
           {error}
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {items.map((item) => {
           const isDone = Boolean(item.completed_at);
           return (
@@ -190,10 +190,10 @@ export function RoutinePanel() {
               className={`routine-item ${draggingId === item.id ? "opacity-50" : ""}`}
             >
               <div
-                className="drag-handle h-8 w-6"
+                className="drag-handle h-6 w-4"
                 onPointerDown={(event) => startReorderDrag(item.id, event)}
               >
-                <GripIcon className="h-4 w-4" />
+                <GripIcon className="h-3.5 w-3.5" />
               </div>
               <button
                 type="button"
@@ -208,11 +208,11 @@ export function RoutinePanel() {
               </span>
               <button
                 type="button"
-                className="icon-button h-8 w-8 shrink-0"
+                className="icon-button h-6 w-6 shrink-0"
                 onClick={() => handleDelete(item.id)}
                 aria-label="Delete routine"
               >
-                <TrashIcon className="h-4 w-4" />
+                <TrashIcon className="h-3.5 w-3.5" />
               </button>
             </div>
           );
