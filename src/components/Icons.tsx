@@ -223,3 +223,29 @@ export function Trash2Icon(props: IconProps) {
     </IconBase>
   );
 }
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </IconBase>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="m5 12 4 4 10-10" />
+    </IconBase>
+  );
+}
+
+export function XIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
+    </IconBase>
+  );
+}

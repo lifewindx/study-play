@@ -101,7 +101,7 @@ function closeForm() {
     }
   }
 
-  const { draggingId: draggingClassId, startReorderDrag } = usePointerReorder(handleReorder);
+  const { draggingId: draggingClassId, startReorderDrag } = usePointerReorder(handleReorder, "classes");
 
   return (
     <div className="page-shell">
@@ -167,6 +167,7 @@ function closeForm() {
           <div
             key={cls.id}
             data-reorder-id={cls.id}
+            data-reorder-scope="classes"
             onClick={() => navigate(`/classes/${cls.id}`)}
             className={`card flex cursor-pointer items-center gap-4 p-4 ${
               draggingClassId === cls.id ? "opacity-50" : ""

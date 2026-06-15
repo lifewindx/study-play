@@ -167,7 +167,7 @@ export function LessonPage() {
     }
   }
 
-  const { draggingId: draggingLessonId, startReorderDrag } = usePointerReorder(handleReorder);
+  const { draggingId: draggingLessonId, startReorderDrag } = usePointerReorder(handleReorder, "lessons");
 
   if (!cls) {
     return (
@@ -292,6 +292,7 @@ export function LessonPage() {
           <div
             key={lesson.id}
             data-reorder-id={lesson.id}
+            data-reorder-scope="lessons"
             onClick={() => navigate(`/lesson/${lesson.id}`)}
             className={`card flex w-full cursor-pointer items-center gap-4 p-4 ${
               draggingLessonId === lesson.id ? "opacity-50" : ""

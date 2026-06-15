@@ -42,4 +42,13 @@ export interface StudySession {
   duration_seconds: number;
 }
 
+export interface RoutineItem {
+  id: number;
+  title: string;
+  completed_at: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Theme = "light" | "dark";

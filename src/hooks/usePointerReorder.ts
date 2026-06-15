@@ -14,7 +14,8 @@ interface DragState {
 }
 
 export function usePointerReorder(
-  onReorder: (draggedId: number, targetId: number, placement: "before" | "after") => void
+  onReorder: (draggedId: number, targetId: number, placement: "before" | "after") => void,
+  scope?: string
 ) {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const dragRef = useRef<DragState | null>(null);
@@ -90,7 +91,7 @@ export function usePointerReorder(
         drag.preview.style.display = "";
         const target = element?.closest<HTMLElement>("[data-reorder-id]");
         const targetId = Number(target?.dataset.reorderId);
-        if (!target || !targetId || targetId === drag.id) {
+        if (!target || !targetId || targetId === drag.id || (scope && target.dataset.reorderScope !== scope)) {
           drag.targetId = null;
           return;
         }
@@ -123,7 +124,7 @@ export function usePointerReorder(
         window.removeEventListener("pointercancel", cleanup);
       };
     },
-    [cleanup]
+    [cleanup, scope]
   );
 
   useEffect(() => cleanup, [cleanup]);

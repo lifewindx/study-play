@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Segment } from "../types";
+import type { RoutineItem, Segment } from "../types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -26,6 +26,20 @@ export async function getDb(): Promise<StudyDb> {
 }
 
 type SegmentSeedRow = Pick<Segment, "lesson_id" | "label" | "start_time" | "end_time" | "sort_order">;
+
+const DEFAULT_ROUTINE_TITLES = [
+  "스케일",
+  "펜타",
+  "CCM",
+  "코드톤",
+  "Backing",
+  "트라이어드",
+  "드롭2",
+  "드롭3",
+  "마이너스케일들",
+  "모드",
+  "재마클",
+];
 
 function isAllSegment(segment: Pick<Segment, "label" | "start_time" | "end_time">): boolean {
   return segment.label === "All" && segment.start_time === 0 && segment.end_time === 0;
@@ -202,6 +216,27 @@ class SupabaseDB implements StudyDb {
       return rows as T;
     }
 
+    if (normalized.startsWith("SELECT * FROM routine_items ORDER BY")) {
+      const { data, error } = await supabase
+        .from("routine_items")
+        .select("*")
+        .order("sort_order")
+        .order("id");
+      if (error) throw error;
+      return (data ?? []) as T;
+    }
+
+    if (normalized.startsWith("SELECT COALESCE(MAX(sort_order), -1) + 1 as max FROM routine_items")) {
+      const { data, error } = await supabase
+        .from("routine_items")
+        .select("sort_order")
+        .order("sort_order", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      const max = data?.[0]?.sort_order ?? -1;
+      return [{ max: max + 1 }] as T;
+    }
+
     return [] as T;
   }
 
@@ -262,6 +297,16 @@ class SupabaseDB implements StudyDb {
         started_at: String(bindValues[2]),
         ended_at: String(bindValues[3]),
         duration_seconds: Number(bindValues[4] ?? 0),
+      });
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
+    if (normalized.startsWith("INSERT INTO routine_items")) {
+      const { error } = await supabase.from("routine_items").insert({
+        user_id: userId,
+        title: String(bindValues[0] ?? ""),
+        sort_order: Number(bindValues[1] ?? 0),
       });
       if (error) throw error;
       return { rowsAffected: 1 };
@@ -335,6 +380,37 @@ class SupabaseDB implements StudyDb {
       return { rowsAffected: 1 };
     }
 
+    if (normalized.startsWith("UPDATE routine_items SET sort_order")) {
+      const { error } = await supabase
+        .from("routine_items")
+        .update({ sort_order: Number(bindValues[0]) })
+        .eq("id", Number(bindValues[1]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
+    if (normalized.startsWith("UPDATE routine_items SET completed_at")) {
+      const completedAt = bindValues[0] === null ? null : String(bindValues[0]);
+      const { error } = await supabase
+        .from("routine_items")
+        .update({ completed_at: completedAt, updated_at: new Date().toISOString() })
+        .eq("id", Number(bindValues[1]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
+    if (normalized.startsWith("UPDATE routine_items SET title")) {
+      const { error } = await supabase
+        .from("routine_items")
+        .update({
+          title: String(bindValues[0] ?? ""),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", Number(bindValues[1]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
     if (normalized.startsWith("DELETE FROM classes")) {
       const { error } = await supabase
         .from("classes")
@@ -362,11 +438,55 @@ class SupabaseDB implements StudyDb {
       return { rowsAffected: 1 };
     }
 
+    if (normalized.startsWith("DELETE FROM routine_items")) {
+      const { error } = await supabase
+        .from("routine_items")
+        .delete()
+        .eq("id", Number(bindValues[0]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
     return { rowsAffected: 0 };
   }
 }
 
+function getRoutineResetStart(now = new Date()): Date {
+  const reset = new Date(now);
+  reset.setHours(6, 0, 0, 0);
+  if (now < reset) reset.setDate(reset.getDate() - 1);
+  return reset;
+}
+
+export async function ensureRoutineItems(): Promise<RoutineItem[]> {
+  const db = await getDb();
+  let rows = await db.select<RoutineItem[]>("SELECT * FROM routine_items ORDER BY sort_order, id");
+
+  if (rows.length === 0) {
+    await Promise.all(
+      DEFAULT_ROUTINE_TITLES.map((title, index) =>
+        db.execute("INSERT INTO routine_items (title, sort_order) VALUES ($1, $2)", [title, index])
+      )
+    );
+    rows = await db.select<RoutineItem[]>("SELECT * FROM routine_items ORDER BY sort_order, id");
+  }
+
+  const resetStart = getRoutineResetStart().getTime();
+  const staleCompleted = rows.filter((item) => item.completed_at && new Date(item.completed_at).getTime() < resetStart);
+  if (staleCompleted.length > 0) {
+    await Promise.all(
+      staleCompleted.map((item) =>
+        db.execute("UPDATE routine_items SET completed_at = $1 WHERE id = $2", [null, item.id])
+      )
+    );
+    rows = await db.select<RoutineItem[]>("SELECT * FROM routine_items ORDER BY sort_order, id");
+  }
+
+  return rows;
+}
+
 export async function clearAllUserData(): Promise<void> {
+  await supabase.from("routine_items").delete().gt("id", 0);
   await supabase.from("study_sessions").delete().gt("id", 0);
   await supabase.from("segments").delete().gt("id", 0);
   await supabase.from("lessons").delete().gt("id", 0);

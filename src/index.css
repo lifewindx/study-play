@@ -227,6 +227,45 @@
     transform: translateY(-50%);
   }
 
+  .routine-panel {
+    @apply fixed bottom-5 right-5 z-30 w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border p-4;
+    background-color: var(--surface-soft);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
+  }
+
+  .routine-item {
+    @apply flex min-h-11 items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+
+  .routine-item:hover {
+    border-color: var(--card-hover-border);
+  }
+
+  .routine-check {
+    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors;
+    border-color: var(--border-color);
+    color: var(--accent-contrast);
+  }
+
+  .routine-check-done {
+    background-color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .routine-title {
+    @apply min-w-0 flex-1 break-words text-sm leading-snug;
+    color: var(--text-primary);
+  }
+
+  .routine-title-done {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
   .player-panel {
     @apply rounded-3xl border p-4;
     background-color: var(--bg-secondary);

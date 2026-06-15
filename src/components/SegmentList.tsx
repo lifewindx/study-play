@@ -34,7 +34,7 @@ export function SegmentList({
 }: SegmentListProps) {
   const { draggingId: draggingSegmentId, startReorderDrag } = usePointerReorder((draggedId, targetId, placement) => {
     onReorder?.(draggedId, targetId, placement);
-  });
+  }, "segments");
 
   if (segments.length === 0) {
     return (
@@ -54,6 +54,7 @@ export function SegmentList({
           <div key={seg.id}>
             <div
               data-reorder-id={isEditing ? undefined : seg.id}
+              data-reorder-scope={isEditing ? undefined : "segments"}
               onClick={() => { if (!isEditing) onSelect(seg); }}
               className={`flex cursor-pointer items-center gap-3 rounded-3xl border p-3 transition-colors ${
                 isActive && !isEditing ? "ring-2" : ""
