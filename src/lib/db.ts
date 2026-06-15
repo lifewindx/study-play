@@ -41,6 +41,13 @@ const DEFAULT_ROUTINE_TITLES = [
   "재마클",
 ];
 
+const LEGACY_ROUTINE_TITLES = [
+  "손 풀기와 튜닝",
+  "느린 템포로 핵심 구간 반복",
+  "원곡 속도로 이어서 연주",
+  "오늘 어려웠던 부분 메모",
+];
+
 function isAllSegment(segment: Pick<Segment, "label" | "start_time" | "end_time">): boolean {
   return segment.label === "All" && segment.start_time === 0 && segment.end_time === 0;
 }
@@ -461,6 +468,17 @@ function getRoutineResetStart(now = new Date()): Date {
 export async function ensureRoutineItems(): Promise<RoutineItem[]> {
   const db = await getDb();
   let rows = await db.select<RoutineItem[]>("SELECT * FROM routine_items ORDER BY sort_order, id");
+
+  const shouldReplaceLegacyDefaults =
+    rows.length === LEGACY_ROUTINE_TITLES.length &&
+    rows.every((item, index) => item.title === LEGACY_ROUTINE_TITLES[index]);
+
+  if (shouldReplaceLegacyDefaults) {
+    await Promise.all(
+      rows.map((item) => db.execute("DELETE FROM routine_items WHERE id = $1", [item.id]))
+    );
+    rows = [];
+  }
 
   if (rows.length === 0) {
     await Promise.all(

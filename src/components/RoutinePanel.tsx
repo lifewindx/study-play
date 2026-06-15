@@ -18,10 +18,17 @@ export function RoutinePanel() {
   const [items, setItems] = useState<RoutineItem[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadItems = useCallback(async () => {
-    const rows = await ensureRoutineItems();
-    setItems(rows);
+    try {
+      const rows = await ensureRoutineItems();
+      setItems(rows);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load routine items", err);
+      setError("Routine storage is not ready.");
+    }
   }, []);
 
   useEffect(() => {
@@ -39,17 +46,23 @@ export function RoutinePanel() {
   async function handleAdd() {
     const title = newTitle.trim();
     if (!title) return;
-    const db = await getDb();
-    const maxOrder = await db.select<[{ max: number }]>(
-      "SELECT COALESCE(MAX(sort_order), -1) + 1 as max FROM routine_items"
-    );
-    await db.execute("INSERT INTO routine_items (title, sort_order) VALUES ($1, $2)", [
-      title,
-      maxOrder[0]?.max ?? 0,
-    ]);
-    setNewTitle("");
-    setIsAdding(false);
-    await loadItems();
+    try {
+      const db = await getDb();
+      const maxOrder = await db.select<[{ max: number }]>(
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 as max FROM routine_items"
+      );
+      await db.execute("INSERT INTO routine_items (title, sort_order) VALUES ($1, $2)", [
+        title,
+        maxOrder[0]?.max ?? 0,
+      ]);
+      setNewTitle("");
+      setIsAdding(false);
+      setError(null);
+      await loadItems();
+    } catch (err) {
+      console.error("Failed to add routine item", err);
+      setError("Could not add routine.");
+    }
   }
 
   async function handleToggle(item: RoutineItem) {
@@ -158,6 +171,12 @@ export function RoutinePanel() {
             Add
           </button>
         </form>
+      )}
+
+      {error && (
+        <div className="mb-3 rounded-xl border px-3 py-2 text-xs" style={{ borderColor: "var(--border-color)", color: "var(--warning)" }}>
+          {error}
+        </div>
       )}
 
       <div className="space-y-2">

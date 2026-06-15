@@ -12,6 +12,10 @@ CREATE INDEX IF NOT EXISTS idx_routine_items_user_id ON routine_items(user_id);
 
 ALTER TABLE routine_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "user_routine_items" ON routine_items;
+
 CREATE POLICY "user_routine_items" ON routine_items
   FOR ALL USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+NOTIFY pgrst, 'reload schema';
