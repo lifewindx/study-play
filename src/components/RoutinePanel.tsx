@@ -19,6 +19,8 @@ export function RoutinePanel() {
   const [newTitle, setNewTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   const loadItems = useCallback(async () => {
     try {
@@ -97,6 +99,43 @@ export function RoutinePanel() {
       );
       await loadItems();
     } catch {
+      await loadItems();
+    }
+  }
+
+  function openEdit(item: RoutineItem) {
+    setEditingItemId(item.id);
+    setEditingTitle(item.title);
+  }
+
+  function closeEdit() {
+    setEditingItemId(null);
+    setEditingTitle("");
+  }
+
+  async function handleSaveEdit(item: RoutineItem) {
+    const title = editingTitle.trim();
+    if (!title) {
+      closeEdit();
+      return;
+    }
+    if (title === item.title) {
+      closeEdit();
+      return;
+    }
+
+    setItems((current) =>
+      current.map((routine) => (routine.id === item.id ? { ...routine, title } : routine))
+    );
+    closeEdit();
+
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE routine_items SET title = $1 WHERE id = $2", [title, item.id]);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to rename routine item", err);
+      setError("Could not rename routine.");
       await loadItems();
     }
   }
@@ -182,16 +221,19 @@ export function RoutinePanel() {
       <div className="space-y-1.5">
         {items.map((item) => {
           const isDone = Boolean(item.completed_at);
+          const isEditing = editingItemId === item.id;
           return (
             <div
               key={item.id}
-              data-reorder-id={item.id}
-              data-reorder-scope={REORDER_SCOPE}
+              data-reorder-id={isEditing ? undefined : item.id}
+              data-reorder-scope={isEditing ? undefined : REORDER_SCOPE}
               className={`routine-item ${draggingId === item.id ? "opacity-50" : ""}`}
             >
               <div
                 className="drag-handle h-6 w-4"
-                onPointerDown={(event) => startReorderDrag(item.id, event)}
+                onPointerDown={(event) => {
+                  if (!isEditing) startReorderDrag(item.id, event);
+                }}
               >
                 <GripIcon className="h-3.5 w-3.5" />
               </div>
@@ -203,9 +245,30 @@ export function RoutinePanel() {
               >
                 {isDone && <CheckIcon className="h-3.5 w-3.5" />}
               </button>
-              <span className={`routine-title ${isDone ? "routine-title-done" : ""}`}>
-                {item.title}
-              </span>
+              {isEditing ? (
+                <input
+                  type="text"
+                  className="routine-title-input"
+                  value={editingTitle}
+                  onChange={(event) => setEditingTitle(event.target.value)}
+                  onBlur={() => handleSaveEdit(item)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") handleSaveEdit(item);
+                    if (event.key === "Escape") closeEdit();
+                  }}
+                  maxLength={80}
+                  autoFocus
+                />
+              ) : (
+                <button
+                  type="button"
+                  className={`routine-title ${isDone ? "routine-title-done" : ""}`}
+                  onDoubleClick={() => openEdit(item)}
+                  aria-label="Edit routine title"
+                >
+                  {item.title}
+                </button>
+              )}
               <button
                 type="button"
                 className="icon-button h-6 w-6 shrink-0"

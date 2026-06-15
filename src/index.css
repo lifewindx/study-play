@@ -236,13 +236,12 @@
   }
 
   .routine-item {
-    @apply flex min-h-8 items-center gap-1.5 rounded-lg border px-1.5 py-1 transition-colors;
-    background-color: var(--bg-secondary);
-    border-color: var(--border-color);
+    @apply flex min-h-7 items-center gap-1 px-0.5 py-0.5 transition-colors;
+    border-color: transparent;
   }
 
   .routine-item:hover {
-    border-color: var(--card-hover-border);
+    background-color: var(--accent-soft);
   }
 
   .routine-check {
@@ -257,8 +256,20 @@
   }
 
   .routine-title {
-    @apply min-w-0 flex-1 break-words text-[11px] leading-tight;
+    @apply min-w-0 flex-1 truncate text-left text-[11px] leading-tight;
     color: var(--text-primary);
+  }
+
+  .routine-title-input {
+    @apply min-w-0 flex-1 rounded-md border px-1 py-0.5 text-[11px] leading-tight outline-none;
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+
+  .routine-title-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
   }
 
   .routine-title-done {
