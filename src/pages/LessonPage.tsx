@@ -8,7 +8,7 @@ import { Grid2Icon, Grid3Icon, GripIcon, HomeIcon, ListIcon, PencilIcon, TrashIc
 type LessonViewMode = "list" | "grid2" | "grid3";
 
 interface YoutubeMeta {
-  title: string;
+  title: string | null;
   thumbnailUrl: string;
 }
 
@@ -219,7 +219,7 @@ export function LessonPage() {
           const title = await fetchYoutubeTitle(lesson.video_url);
           const thumbnailUrl = getYoutubeThumbnailUrl(lesson.video_url);
           if (!thumbnailUrl) return null;
-          return [lesson.id, { title: title ?? lesson.title, thumbnailUrl }] as const;
+          return [lesson.id, { title, thumbnailUrl }] as const;
         })
       );
       if (cancelled) return;
@@ -442,7 +442,9 @@ export function LessonPage() {
                     </h3>
                     {lesson.video_type === "youtube" && (
                       <p className="mt-1 line-clamp-2 text-sm leading-snug" style={{ color: "var(--text-muted)" }}>
-                        {youtubeMeta?.title ?? "YouTube title loading..."}
+                        {youtubeMeta === undefined
+                          ? "YouTube title loading..."
+                          : youtubeMeta.title ?? "YouTube title unavailable"}
                       </p>
                     )}
                   </div>
