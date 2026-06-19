@@ -3,7 +3,47 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { GripIcon, HomeIcon, PencilIcon, TrashIcon } from "../components/Icons";
+import { Grid2Icon, Grid3Icon, GripIcon, HomeIcon, ListIcon, PencilIcon, TrashIcon } from "../components/Icons";
+
+type LessonViewMode = "list" | "grid2" | "grid3";
+
+interface YoutubeMeta {
+  title: string;
+  thumbnailUrl: string;
+}
+
+function getYoutubeVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") return parsed.pathname.split("/").filter(Boolean)[0] ?? null;
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+      if (parsed.pathname === "/watch") return parsed.searchParams.get("v");
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      if (["embed", "shorts", "live"].includes(parts[0])) return parts[1] ?? null;
+    }
+  } catch {
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return match?.[1] ?? null;
+  }
+  return null;
+}
+
+function getYoutubeThumbnailUrl(url: string): string | null {
+  const videoId = getYoutubeVideoId(url);
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+}
+
+async function fetchYoutubeTitle(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`);
+    if (!response.ok) return null;
+    const data = await response.json() as { title?: string };
+    return data.title?.trim() || null;
+  } catch {
+    return null;
+  }
+}
 
 export function LessonPage() {
   const { classId } = useParams<{ classId: string }>();
@@ -17,6 +57,8 @@ export function LessonPage() {
   const [classDescription, setClassDescription] = useState("");
   const [title, setTitle] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [viewMode, setViewMode] = useState<LessonViewMode>("grid2");
+  const [youtubeMetaByLessonId, setYoutubeMetaByLessonId] = useState<Record<number, YoutubeMeta>>({});
 
   const loadData = useCallback(async () => {
     if (!classId) return;
@@ -84,21 +126,10 @@ export function LessonPage() {
     await loadData();
   }
 
-  async function getYoutubeTitle(url: string): Promise<string> {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-    try {
-      const response = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`);
-      if (response.ok) {
-        const data = await response.json() as { title?: string };
-        if (data.title) return data.title;
-      }
-    } catch {}
-    return match ? `YouTube ${match[1]}` : "Untitled lesson";
-  }
-
   async function handleSave() {
     if (!videoUrl.trim()) return;
-    const resolvedTitle = title.trim() || await getYoutubeTitle(videoUrl.trim());
+    const videoId = getYoutubeVideoId(videoUrl.trim());
+    const resolvedTitle = title.trim() || await fetchYoutubeTitle(videoUrl.trim()) || (videoId ? `YouTube ${videoId}` : "Untitled lesson");
     const db = await getDb();
     if (editingLessonId !== null) {
       await db.execute(
@@ -169,6 +200,39 @@ export function LessonPage() {
 
   const { draggingId: draggingLessonId, startReorderDrag } = usePointerReorder(handleReorder, "lessons");
 
+  useEffect(() => {
+    let cancelled = false;
+    const youtubeLessons = lessons.filter((lesson) => lesson.video_type === "youtube" && getYoutubeThumbnailUrl(lesson.video_url));
+    if (youtubeLessons.length === 0) {
+      setYoutubeMetaByLessonId({});
+      return;
+    }
+
+    async function loadYoutubeMeta() {
+      const entries = await Promise.all(
+        youtubeLessons.map(async (lesson) => {
+          const title = await fetchYoutubeTitle(lesson.video_url);
+          const thumbnailUrl = getYoutubeThumbnailUrl(lesson.video_url);
+          if (!thumbnailUrl) return null;
+          return [lesson.id, { title: title ?? lesson.title, thumbnailUrl }] as const;
+        })
+      );
+      if (cancelled) return;
+      setYoutubeMetaByLessonId(Object.fromEntries(entries.filter((entry): entry is NonNullable<typeof entry> => entry !== null)));
+    }
+
+    void loadYoutubeMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [lessons]);
+
+  const listClassName = viewMode === "list"
+    ? "grid gap-3"
+    : viewMode === "grid2"
+      ? "grid gap-4 sm:grid-cols-2"
+      : "grid gap-4 sm:grid-cols-2 xl:grid-cols-3";
+
   if (!cls) {
     return (
       <div className="flex items-center justify-center h-64" style={{ color: "var(--text-secondary)" }}>
@@ -192,18 +256,49 @@ export function LessonPage() {
         </button>
       </div>
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="section-title">
           Lessons
         </h2>
-        {!showForm && (
-          <button
-            onClick={openCreateForm}
-            className="btn-primary"
-          >
-            New lesson
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-xl border p-1" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`icon-button h-8 w-8 ${viewMode === "list" ? "icon-button-active" : ""}`}
+              aria-label="List view"
+              title="목록보기"
+            >
+              <ListIcon className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid2")}
+              className={`icon-button h-8 w-8 ${viewMode === "grid2" ? "icon-button-active" : ""}`}
+              aria-label="2 column view"
+              title="2컬럼 보기"
+            >
+              <Grid2Icon className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid3")}
+              className={`icon-button h-8 w-8 ${viewMode === "grid3" ? "icon-button-active" : ""}`}
+              aria-label="3 column view"
+              title="3컬럼 보기"
+            >
+              <Grid3Icon className="h-4 w-4" />
+            </button>
+          </div>
+          {!showForm && (
+            <button
+              onClick={openCreateForm}
+              className="btn-primary"
+            >
+              New lesson
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && (
@@ -287,47 +382,85 @@ export function LessonPage() {
         </div>
       )}
 
-      <div className="grid gap-3">
-        {lessons.map((lesson) => (
-          <div
-            key={lesson.id}
-            data-reorder-id={lesson.id}
-            data-reorder-scope="lessons"
-            onClick={() => navigate(`/lesson/${lesson.id}`)}
-            className={`card flex w-full cursor-pointer items-center gap-4 p-4 ${
-              draggingLessonId === lesson.id ? "opacity-50" : ""
-            }`}
-          >
+      <div className={listClassName}>
+        {lessons.map((lesson) => {
+          const youtubeMeta = youtubeMetaByLessonId[lesson.id];
+          const thumbnailUrl = youtubeMeta?.thumbnailUrl ?? getYoutubeThumbnailUrl(lesson.video_url);
+          const cardClassName = viewMode === "list"
+            ? "card flex w-full cursor-pointer items-center gap-4 p-4"
+            : "card flex min-h-full w-full cursor-pointer flex-col overflow-hidden";
+          const thumbnailClassName = viewMode === "list"
+            ? "h-20 w-32"
+            : "aspect-video w-full";
+
+          return (
             <div
-              className="drag-handle"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => startReorderDrag(lesson.id, e)}
+              key={lesson.id}
+              data-reorder-id={lesson.id}
+              data-reorder-scope="lessons"
+              onClick={() => navigate(`/lesson/${lesson.id}`)}
+              className={`${cardClassName} ${
+                draggingLessonId === lesson.id ? "opacity-50" : ""
+              }`}
             >
-              <GripIcon className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                {lesson.title}
-              </h3>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                onClick={(e) => openEditForm(lesson, e)}
-                className="icon-button"
-                aria-label="Edit lesson"
+              <div
+                className={`${thumbnailClassName} shrink-0 overflow-hidden ${viewMode === "list" ? "rounded-2xl" : "rounded-t-3xl"}`}
+                style={{ backgroundColor: "var(--bg-tertiary)" }}
               >
-                <PencilIcon className="h-4 w-4" />
-              </button>
-              <button
-                onClick={(e) => handleDelete(lesson.id, e)}
-                className="icon-button"
-                aria-label="Delete lesson"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
+                {thumbnailUrl ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    Local video
+                  </div>
+                )}
+              </div>
+              <div className={`${viewMode === "list" ? "flex-1" : "flex flex-1 flex-col p-4"} min-w-0`}>
+                <div className={viewMode === "list" ? "flex items-center gap-3" : "flex items-start gap-2"}>
+                  <div
+                    className="drag-handle"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => startReorderDrag(lesson.id, e)}
+                  >
+                    <GripIcon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
+                      {lesson.title}
+                    </h3>
+                    {lesson.video_type === "youtube" && (
+                      <p className="mt-1 line-clamp-2 text-sm leading-snug" style={{ color: "var(--text-muted)" }}>
+                        {youtubeMeta?.title ?? "YouTube title loading..."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className={`${viewMode === "list" ? "shrink-0" : "px-4 pb-4"} flex items-center justify-end gap-1`}>
+                <button
+                  onClick={(e) => openEditForm(lesson, e)}
+                  className="icon-button"
+                  aria-label="Edit lesson"
+                >
+                  <PencilIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={(e) => handleDelete(lesson.id, e)}
+                  className="icon-button"
+                  aria-label="Delete lesson"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {lessons.length === 0 && (
           <p className="col-span-full rounded-3xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
             No lessons yet. Add your first lesson.

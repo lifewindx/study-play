@@ -249,3 +249,35 @@ export function XIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+export function ListIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M8 6h13" />
+      <path d="M8 12h13" />
+      <path d="M8 18h13" />
+      <path d="M3 6h.01" />
+      <path d="M3 12h.01" />
+      <path d="M3 18h.01" />
+    </IconBase>
+  );
+}
+
+export function Grid2Icon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 4h7v16H4z" />
+      <path d="M13 4h7v16h-7z" />
+    </IconBase>
+  );
+}
+
+export function Grid3Icon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 4h4v16H4z" />
+      <path d="M10 4h4v16h-4z" />
+      <path d="M16 4h4v16h-4z" />
+    </IconBase>
+  );
+}
