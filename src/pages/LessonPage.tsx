@@ -31,7 +31,12 @@ function getYoutubeVideoId(url: string): string | null {
 
 function getYoutubeThumbnailUrl(url: string): string | null {
   const videoId = getYoutubeVideoId(url);
-  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+  return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+}
+
+function getYoutubeThumbnailFallbackUrl(url: string): string | null {
+  const videoId = getYoutubeVideoId(url);
+  return videoId ? `https://img.youtube.com/vi/${videoId}/default.jpg` : null;
 }
 
 async function fetchYoutubeTitle(url: string): Promise<string | null> {
@@ -386,12 +391,9 @@ export function LessonPage() {
         {lessons.map((lesson) => {
           const youtubeMeta = youtubeMetaByLessonId[lesson.id];
           const thumbnailUrl = youtubeMeta?.thumbnailUrl ?? getYoutubeThumbnailUrl(lesson.video_url);
-          const cardClassName = viewMode === "list"
-            ? "card flex w-full cursor-pointer items-center gap-4 p-4"
-            : "card flex min-h-full w-full cursor-pointer flex-col overflow-hidden";
-          const thumbnailClassName = viewMode === "list"
-            ? "h-20 w-32"
-            : "aspect-video w-full";
+          const thumbnailFallbackUrl = getYoutubeThumbnailFallbackUrl(lesson.video_url);
+          const cardClassName = "card flex min-h-full w-full cursor-pointer items-center gap-4 p-4";
+          const thumbnailClassName = "h-[72px] w-32";
 
           return (
             <div
@@ -404,7 +406,7 @@ export function LessonPage() {
               }`}
             >
               <div
-                className={`${thumbnailClassName} shrink-0 overflow-hidden ${viewMode === "list" ? "rounded-2xl" : "rounded-t-3xl"}`}
+                className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-2xl`}
                 style={{ backgroundColor: "var(--bg-tertiary)" }}
               >
                 {thumbnailUrl ? (
@@ -414,6 +416,10 @@ export function LessonPage() {
                     className="h-full w-full object-cover"
                     loading="lazy"
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      if (!thumbnailFallbackUrl || e.currentTarget.src === thumbnailFallbackUrl) return;
+                      e.currentTarget.src = thumbnailFallbackUrl;
+                    }}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-xs font-medium" style={{ color: "var(--text-muted)" }}>
@@ -421,8 +427,8 @@ export function LessonPage() {
                   </div>
                 )}
               </div>
-              <div className={`${viewMode === "list" ? "flex-1" : "flex flex-1 flex-col p-4"} min-w-0`}>
-                <div className={viewMode === "list" ? "flex items-center gap-3" : "flex items-start gap-2"}>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-3">
                   <div
                     className="drag-handle"
                     onClick={(e) => e.stopPropagation()}
@@ -442,7 +448,7 @@ export function LessonPage() {
                   </div>
                 </div>
               </div>
-              <div className={`${viewMode === "list" ? "shrink-0" : "px-4 pb-4"} flex items-center justify-end gap-1`}>
+              <div className="flex shrink-0 items-center justify-end gap-1">
                 <button
                   onClick={(e) => openEditForm(lesson, e)}
                   className="icon-button"
