@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { Grid2Icon, Grid3Icon, GripIcon, HomeIcon, ListIcon, PencilIcon, TrashIcon } from "../components/Icons";
+import { Grid2Icon, Grid3Icon, HomeIcon, ListIcon, PencilIcon, TrashIcon } from "../components/Icons";
 
 type LessonViewMode = "list" | "grid2" | "grid3";
 
@@ -392,7 +392,7 @@ export function LessonPage() {
           const youtubeMeta = youtubeMetaByLessonId[lesson.id];
           const thumbnailUrl = youtubeMeta?.thumbnailUrl ?? getYoutubeThumbnailUrl(lesson.video_url);
           const thumbnailFallbackUrl = getYoutubeThumbnailFallbackUrl(lesson.video_url);
-          const cardClassName = "card flex min-h-full w-full cursor-pointer items-center gap-4 p-4";
+          const cardClassName = "card flex min-h-full w-full cursor-pointer items-center gap-3 px-3 py-2";
           const thumbnailClassName = "h-[72px] w-32";
 
           return (
@@ -401,6 +401,7 @@ export function LessonPage() {
               data-reorder-id={lesson.id}
               data-reorder-scope="lessons"
               onClick={() => navigate(`/lesson/${lesson.id}`)}
+              onPointerDown={(e) => startReorderDrag(lesson.id, e)}
               className={`${cardClassName} ${
                 draggingLessonId === lesson.id ? "opacity-50" : ""
               }`}
@@ -428,30 +429,20 @@ export function LessonPage() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="drag-handle"
-                    onClick={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => startReorderDrag(lesson.id, e)}
-                  >
-                    <GripIcon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
-                      {lesson.title}
-                    </h3>
-                    {lesson.video_type === "youtube" && (
-                      <p className="mt-1 line-clamp-2 text-sm leading-snug" style={{ color: "var(--text-muted)" }}>
-                        {youtubeMeta === undefined
-                          ? "YouTube title loading..."
-                          : youtubeMeta.title ?? "YouTube title unavailable"}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
+                  {lesson.title}
+                </h3>
+                {lesson.video_type === "youtube" && (
+                  <p className="mt-0.5 line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
+                    {youtubeMeta === undefined
+                      ? "YouTube title loading..."
+                      : youtubeMeta.title ?? "YouTube title unavailable"}
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center justify-end gap-1">
                 <button
+                  data-no-reorder
                   onClick={(e) => openEditForm(lesson, e)}
                   className="icon-button"
                   aria-label="Edit lesson"
@@ -459,6 +450,7 @@ export function LessonPage() {
                   <PencilIcon className="h-4 w-4" />
                 </button>
                 <button
+                  data-no-reorder
                   onClick={(e) => handleDelete(lesson.id, e)}
                   className="icon-button"
                   aria-label="Delete lesson"

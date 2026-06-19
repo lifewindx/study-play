@@ -61,14 +61,14 @@ export function MyPage() {
         </h1>
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card p-3 space-y-3">
         <div>
           <div className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Email</div>
           <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{user?.email}</div>
         </div>
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card p-3 space-y-3">
         <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Display</h3>
         <button
           onClick={toggleTheme}
@@ -84,7 +84,7 @@ export function MyPage() {
         </button>
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card p-3 space-y-3">
         <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Change password</h3>
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
           We'll send a secure link to <strong>{user?.email}</strong> to reset your password.
@@ -100,7 +100,7 @@ export function MyPage() {
         {pwMessage && <p className="text-xs" style={{ color: "var(--success, #11895b)" }}>{pwMessage}</p>}
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card p-3 space-y-3">
         <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Data</h3>
         <button
           onClick={handleClearHistory}
@@ -115,7 +115,7 @@ export function MyPage() {
         </div>
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card p-3 space-y-3">
         <h3 className="text-sm font-semibold" style={{ color: "var(--danger, #ef4444)" }}>Danger zone</h3>
         {!showDeleteConfirm ? (
           <button

@@ -199,21 +199,6 @@
     color: var(--nav-active-text);
   }
 
-  .drag-handle {
-    @apply flex h-10 w-7 shrink-0 items-center justify-center rounded-xl;
-    color: var(--text-muted);
-    cursor: grab;
-    opacity: 0.42;
-  }
-
-  .drag-handle:hover {
-    opacity: 0.72;
-  }
-
-  .drag-handle:active {
-    cursor: grabbing;
-  }
-
   .reorder-preview {
     @apply pointer-events-none fixed z-[9999] opacity-90;
     box-shadow: 0 24px 60px rgba(17, 18, 20, 0.24);

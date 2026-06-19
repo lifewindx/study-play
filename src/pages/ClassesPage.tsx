@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Class } from "../types";
 import { getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { GripIcon, PencilIcon, TrashIcon } from "../components/Icons";
+import { PencilIcon, TrashIcon } from "../components/Icons";
 
 export function ClassesPage() {
   const navigate = useNavigate();
@@ -169,17 +169,11 @@ function closeForm() {
             data-reorder-id={cls.id}
             data-reorder-scope="classes"
             onClick={() => navigate(`/classes/${cls.id}`)}
-            className={`card flex cursor-pointer items-center gap-4 p-4 ${
+            onPointerDown={(e) => startReorderDrag(cls.id, e)}
+            className={`card flex cursor-pointer items-center gap-3 px-3 py-2 ${
               draggingClassId === cls.id ? "opacity-50" : ""
             }`}
           >
-            <div
-              className="drag-handle"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => startReorderDrag(cls.id, e)}
-            >
-              <GripIcon className="h-5 w-5" />
-            </div>
             <div className="flex-1 min-w-0">
               <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
                 {cls.title}
@@ -192,6 +186,7 @@ function closeForm() {
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <button
+                data-no-reorder
                 onClick={(e) => openEditForm(cls, e)}
                 className="icon-button"
                 aria-label="Edit class"
@@ -199,6 +194,7 @@ function closeForm() {
                 <PencilIcon className="h-4 w-4" />
               </button>
               <button
+                data-no-reorder
                 onClick={(e) => handleDelete(cls.id, e)}
                 className="icon-button"
                 aria-label="Delete class"

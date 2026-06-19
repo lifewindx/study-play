@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { RoutineItem } from "../types";
 import { deleteRoutineCompletion, ensureRoutineItems, getDb, recordRoutineCompletion } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { CheckIcon, GripIcon, PlusIcon, TrashIcon, XIcon } from "./Icons";
+import { CheckIcon, PlusIcon, TrashIcon, XIcon } from "./Icons";
 
 const REORDER_SCOPE = "routine-items";
 
@@ -235,17 +235,13 @@ export function RoutinePanel() {
               key={item.id}
               data-reorder-id={isEditing ? undefined : item.id}
               data-reorder-scope={isEditing ? undefined : REORDER_SCOPE}
+              onPointerDown={(event) => {
+                if (!isEditing) startReorderDrag(item.id, event);
+              }}
               className={`routine-item ${draggingId === item.id ? "opacity-50" : ""}`}
             >
-              <div
-                className="drag-handle h-6 w-4"
-                onPointerDown={(event) => {
-                  if (!isEditing) startReorderDrag(item.id, event);
-                }}
-              >
-                <GripIcon className="h-3.5 w-3.5" />
-              </div>
               <button
+                data-no-reorder
                 type="button"
                 className={`routine-check ${isDone ? "routine-check-done" : ""}`}
                 onClick={() => handleToggle(item)}
@@ -278,6 +274,7 @@ export function RoutinePanel() {
                 </button>
               )}
               <button
+                data-no-reorder
                 type="button"
                 className="icon-button h-6 w-6 shrink-0"
                 onClick={() => handleDelete(item.id)}

@@ -37,6 +37,8 @@ export function usePointerReorder(
   const startReorderDrag = useCallback(
     (id: number, event: ReactPointerEvent<HTMLElement>) => {
       if (event.button !== 0) return;
+      const target = event.target as HTMLElement;
+      if (target.closest("[data-no-reorder], input, textarea, select, a, [contenteditable='true']")) return;
       event.preventDefault();
       event.stopPropagation();
 

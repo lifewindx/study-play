@@ -2,7 +2,7 @@ import type { Segment } from "../types";
 import { formatTimeMs } from "../lib/utils";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { SegmentEditor } from "./SegmentEditor";
-import { GripIcon, PencilIcon, TrashIcon } from "./Icons";
+import { PencilIcon, TrashIcon } from "./Icons";
 
 interface SegmentListProps {
   segments: Segment[];
@@ -56,7 +56,10 @@ export function SegmentList({
               data-reorder-id={isEditing ? undefined : seg.id}
               data-reorder-scope={isEditing ? undefined : "segments"}
               onClick={() => { if (!isEditing) onSelect(seg); }}
-              className={`flex cursor-pointer items-center gap-3 rounded-3xl border p-3 transition-colors ${
+              onPointerDown={(e) => {
+                if (!isEditing) startReorderDrag(seg.id, e);
+              }}
+              className={`flex cursor-pointer items-center gap-2 rounded-3xl border p-2 transition-colors ${
                 isActive && !isEditing ? "ring-2" : ""
               } ${isEditing ? "rounded-b-none border-b-0" : ""} ${
                 draggingSegmentId === seg.id ? "opacity-50" : ""
@@ -66,16 +69,6 @@ export function SegmentList({
                 borderColor: isActive && !isEditing ? "var(--accent)" : "var(--border-color)",
               }}
             >
-              <div
-                className="drag-handle"
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => {
-                  if (!isEditing) startReorderDrag(seg.id, e);
-                }}
-              >
-                <GripIcon className="h-5 w-5" />
-              </div>
-
               <div className="flex-1 min-w-0" onClick={(e) => { if (isEditing) e.stopPropagation(); }}>
                 <div className="flex items-center gap-2">
                   <span className="rounded px-1.5 py-0.5 text-xs"
@@ -100,6 +93,7 @@ export function SegmentList({
 
               <div className="flex shrink-0 gap-1">
                 <button
+                  data-no-reorder
                   onClick={(e) => { e.stopPropagation(); onEdit(seg); }}
                   className="icon-button"
                   style={{ color: isEditing ? "var(--accent)" : "var(--text-secondary)" }}
@@ -109,6 +103,7 @@ export function SegmentList({
                 </button>
                 {!isEditing && (
                   <button
+                    data-no-reorder
                     onClick={(e) => { e.stopPropagation(); onDelete(seg.id); }}
                     className="icon-button"
                     style={{ color: "var(--text-secondary)" }}

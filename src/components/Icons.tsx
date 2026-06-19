@@ -19,19 +19,6 @@ function IconBase({ children, ...props }: IconProps) {
   );
 }
 
-export function GripIcon(props: IconProps) {
-  return (
-    <IconBase {...props}>
-      <circle cx="9" cy="6" r="1" />
-      <circle cx="15" cy="6" r="1" />
-      <circle cx="9" cy="12" r="1" />
-      <circle cx="15" cy="12" r="1" />
-      <circle cx="9" cy="18" r="1" />
-      <circle cx="15" cy="18" r="1" />
-    </IconBase>
-  );
-}
-
 export function PencilIcon(props: IconProps) {
   return (
     <IconBase {...props}>
