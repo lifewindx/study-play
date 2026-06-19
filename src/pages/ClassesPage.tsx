@@ -163,18 +163,22 @@ function closeForm() {
       )}
 
       <div className="grid gap-3">
-        {classes.map((cls) => (
+        {classes.map((cls, index) => (
           <div
             key={cls.id}
             data-reorder-id={cls.id}
             data-reorder-scope="classes"
             onClick={() => navigate(`/classes/${cls.id}`)}
             onPointerDown={(e) => startReorderDrag(cls.id, e)}
-            className={`card flex cursor-pointer items-center gap-3 px-3 py-2 ${
+            className={`card flex cursor-pointer items-center gap-3 rounded-2xl border-l-[3px] py-3 pl-6 pr-3 ${
               draggingClassId === cls.id ? "opacity-50" : ""
             }`}
+            style={{ borderLeftColor: "var(--accent)" }}
           >
             <div className="flex-1 min-w-0">
+              <p className="mb-0.5 text-[10px] font-semibold uppercase" style={{ color: "var(--accent)" }}>
+                Class {String(index + 1).padStart(2, "0")}
+              </p>
               <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
                 {cls.title}
               </h3>

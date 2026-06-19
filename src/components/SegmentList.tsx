@@ -59,7 +59,7 @@ export function SegmentList({
               onPointerDown={(e) => {
                 if (!isEditing) startReorderDrag(seg.id, e);
               }}
-              className={`flex cursor-pointer items-center gap-2 rounded-3xl border p-2 transition-colors ${
+              className={`flex cursor-pointer items-center gap-3 rounded-3xl border p-3 transition-colors ${
                 isActive && !isEditing ? "ring-2" : ""
               } ${isEditing ? "rounded-b-none border-b-0" : ""} ${
                 draggingSegmentId === seg.id ? "opacity-50" : ""
