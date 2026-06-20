@@ -14,6 +14,7 @@ interface VideoPlayerProps {
   flipV: boolean;
   onTimeUpdate?: (currentTime: number) => void;
   onDurationChange?: (duration: number) => void;
+  onPlaybackPaused?: () => void;
   segmentKey?: number;
   playCommand?: number;
   pauseCommand?: number;
@@ -140,6 +141,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   flipV,
   onTimeUpdate,
   onDurationChange,
+  onPlaybackPaused,
   segmentKey,
   playCommand,
   pauseCommand,
@@ -151,12 +153,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const loopTimerRef = useRef<number | null>(null);
   const pollTimerRef = useRef<number | null>(null);
   const isPlayingRef = useRef(isPlaying);
+  const playbackIntentRef = useRef(isPlaying);
   const speedRef = useRef(speed);
   const startTimeRef = useRef(startTime);
   const endTimeRef = useRef(endTime);
   const loopGapRef = useRef(loopGap);
   const onTimeUpdateRef = useRef(onTimeUpdate);
   const onDurationChangeRef = useRef(onDurationChange);
+  const onPlaybackPausedRef = useRef(onPlaybackPaused);
   const lastKnownTimeRef = useRef(0);
   const lastKnownDurationRef = useRef(0);
   const [rotatedFitScale, setRotatedFitScale] = useState(1);
@@ -168,6 +172,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   loopGapRef.current = loopGap;
   onTimeUpdateRef.current = onTimeUpdate;
   onDurationChangeRef.current = onDurationChange;
+  onPlaybackPausedRef.current = onPlaybackPaused;
 
   const videoId = videoType === "youtube" ? extractYoutubeId(videoUrl) : null;
 
@@ -189,6 +194,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   }
 
   function executeLoop() {
+    if (!playbackIntentRef.current) return;
     const st = startTimeRef.current;
     const gap = loopGapRef.current;
     const p = playerRef.current;
@@ -197,7 +203,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     if (gap > 0) {
       if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
       gapTimerRef.current = window.setTimeout(() => {
-        if (isPlayingRef.current) {
+        if (playbackIntentRef.current) {
           lastKnownTimeRef.current = st;
           p.playVideo();
           scheduleLoop();
@@ -246,6 +252,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   useImperativeHandle(ref, () => ({
     playSegment(start, end, gap) {
+      playbackIntentRef.current = true;
       startTimeRef.current = start;
       endTimeRef.current = end;
       loopGapRef.current = gap;
@@ -258,6 +265,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       startPolling();
     },
     pause() {
+      playbackIntentRef.current = false;
       const p = playerRef.current;
       if (!p || videoType !== "youtube") return;
       p.pauseVideo();
@@ -330,8 +338,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 startPolling();
               } else {
                 stopPolling();
+                if (state === (window.YT?.PlayerState.PAUSED ?? 2)) {
+                  playbackIntentRef.current = false;
+                  clearLoopTimer();
+                  if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
+                  onPlaybackPausedRef.current?.();
+                }
                 if (state === (window.YT?.PlayerState.ENDED ?? 0)) {
-                  if (isPlayingRef.current) {
+                  if (playbackIntentRef.current) {
                     player.seekTo(startTimeRef.current, true);
                     player.playVideo();
                   }
@@ -359,12 +373,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     const p = playerRef.current;
     if (!p || videoType !== "youtube") return;
     if (isPlaying) {
+      playbackIntentRef.current = true;
       lastKnownTimeRef.current = startTime;
       if (startTime > 0) p.seekTo(startTime, true);
       p.playVideo();
       scheduleLoop();
       startPolling();
     } else {
+      playbackIntentRef.current = false;
       p.pauseVideo();
       clearLoopTimer();
       if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
@@ -374,6 +390,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   useEffect(() => {
     const p = playerRef.current;
     if (!p || videoType !== "youtube" || !playCommand) return;
+    playbackIntentRef.current = true;
     lastKnownTimeRef.current = startTime;
     if (startTime > 0) p.seekTo(startTime, true);
     p.playVideo();
@@ -384,6 +401,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   useEffect(() => {
     const p = playerRef.current;
     if (!p || videoType !== "youtube" || !pauseCommand) return;
+    playbackIntentRef.current = false;
     p.pauseVideo();
     clearLoopTimer();
     if (gapTimerRef.current) clearTimeout(gapTimerRef.current);

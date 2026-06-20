@@ -153,6 +153,7 @@ export function PlayerPage() {
   async function handlePlayPause() {
     if (segments.length === 0) return;
     if (!isPlaying) {
+      setIsPlaying(true);
       const segment = activeSegment ?? segments[0];
       if (!activeSegment) {
         setActiveSegment(segment);
@@ -161,11 +162,11 @@ export function PlayerPage() {
       await startStudySession(segment);
       setPlayCommand((value) => value + 1);
     } else {
+      setIsPlaying(false);
       videoRef.current?.pause();
       setPauseCommand((value) => value + 1);
       await finishStudySession();
     }
-    setIsPlaying(!isPlaying);
   }
 
   async function handleSelectSegment(seg: Segment) {
@@ -177,6 +178,11 @@ export function PlayerPage() {
     videoRef.current?.playSegment(seg.start_time, getSegmentEndTime(seg), seg.loop_gap);
     setPlayCommand((value) => value + 1);
     await startStudySession(seg);
+  }
+
+  function handlePlaybackPaused() {
+    setIsPlaying(false);
+    finishStudySession().catch((error) => console.error(error));
   }
 
   async function handleSaveSegment(data: {
@@ -456,6 +462,7 @@ export function PlayerPage() {
               flipV={flipV}
               onTimeUpdate={handleTimeUpdate}
               onDurationChange={handleDurationChange}
+              onPlaybackPaused={handlePlaybackPaused}
               segmentKey={activeSegment?.id}
               playCommand={playCommand}
               pauseCommand={pauseCommand}
