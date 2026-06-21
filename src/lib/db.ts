@@ -48,8 +48,8 @@ const LEGACY_ROUTINE_TITLES = [
   "오늘 어려웠던 부분 메모",
 ];
 
-function isAllSegment(segment: Pick<Segment, "label" | "start_time" | "end_time">): boolean {
-  return segment.label === "All" && segment.start_time === 0 && segment.end_time === 0;
+function isAllSegment(segment: Pick<Segment, "label" | "start_time">): boolean {
+  return segment.label === "All" && segment.start_time === 0;
 }
 
 export async function ensureAllSegmentsForLessons(lessonIds: number[]): Promise<number> {
@@ -87,9 +87,16 @@ export async function ensureAllSegmentsForLessons(lessonIds: number[]): Promise<
 
   if (inserts.length === 0) return 0;
 
-  const { error: insertError } = await supabase.from("segments").insert(inserts);
-  if (insertError) throw insertError;
-  return inserts.length;
+  const results = await Promise.all(inserts.map(async (insert) => {
+    const { error } = await supabase.from("segments").insert(insert);
+    if (!error) return true;
+
+    // Another page load may have inserted the same system segment concurrently.
+    if (error.code === "23505") return false;
+    throw error;
+  }));
+
+  return results.filter(Boolean).length;
 }
 
 class SupabaseDB implements StudyDb {

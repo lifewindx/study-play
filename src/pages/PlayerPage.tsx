@@ -309,18 +309,6 @@ export function PlayerPage() {
     setActiveSegment((currentSegment) =>
       currentSegment?.id === allSegment.id ? hydratedSegment : currentSegment
     );
-
-    try {
-      const db = await getDb();
-      await db.execute(
-        `UPDATE segments SET label = $1, start_time = $2, end_time = $3, loop_gap = $4,
-         updated_at = datetime('now','localtime') WHERE id = $5`,
-        [allSegment.label, allSegment.start_time, normalizedDuration, allSegment.loop_gap, allSegment.id]
-      );
-    } catch (error) {
-      hydratedAllSegmentIdsRef.current.delete(allSegment.id);
-      console.error(error);
-    }
   }, [segments]);
 
   function getSegmentEndTime(segment: Segment): number {
@@ -702,5 +690,5 @@ function formatTimeShort(seconds: number): string {
 }
 
 function isAllPlaceholderSegment(segment: Segment): boolean {
-  return segment.label === "All" && segment.start_time === 0 && segment.end_time === 0;
+  return segment.label === "All" && segment.start_time === 0;
 }
