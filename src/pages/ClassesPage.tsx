@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Class } from "../types";
+import type { Class, Lesson } from "../types";
 import { getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { PencilIcon, TrashIcon } from "../components/Icons";
@@ -8,6 +8,7 @@ import { PencilIcon, TrashIcon } from "../components/Icons";
 export function ClassesPage() {
   const navigate = useNavigate();
   const [classes, setClasses] = useState<Class[]>([]);
+  const [lessonCountByClassId, setLessonCountByClassId] = useState<Record<number, number>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingClassId, setEditingClassId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
@@ -15,10 +16,15 @@ export function ClassesPage() {
 
   const loadClasses = useCallback(async () => {
     const db = await getDb();
-    const rows = await db.select<Class[]>(
-      "SELECT * FROM classes ORDER BY sort_order, id"
-    );
+    const [rows, lessonRows] = await Promise.all([
+      db.select<Class[]>("SELECT * FROM classes ORDER BY sort_order, id"),
+      db.select<Array<Pick<Lesson, "class_id">>>("SELECT class_id FROM lessons"),
+    ]);
     setClasses(rows);
+    setLessonCountByClassId(lessonRows.reduce<Record<number, number>>((counts, lesson) => {
+      counts[lesson.class_id] = (counts[lesson.class_id] ?? 0) + 1;
+      return counts;
+    }, {}));
   }, []);
 
   useEffect(() => {
@@ -189,6 +195,12 @@ function closeForm() {
               )}
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <span
+                className="mr-1 rounded-lg px-2 py-1 text-xs font-medium"
+                style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-tertiary)" }}
+              >
+                {lessonCountByClassId[cls.id] ?? 0} {(lessonCountByClassId[cls.id] ?? 0) === 1 ? "lesson" : "lessons"}
+              </span>
               <button
                 data-no-reorder
                 onClick={(e) => openEditForm(cls, e)}

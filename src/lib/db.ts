@@ -135,6 +135,14 @@ class SupabaseDB implements StudyDb {
       return (data ? [data] : []) as T;
     }
 
+    if (normalized === "SELECT class_id FROM lessons") {
+      const { data, error } = await supabase
+        .from("lessons")
+        .select("class_id");
+      if (error) throw error;
+      return (data ?? []) as T;
+    }
+
     if (normalized.startsWith("SELECT * FROM lessons WHERE class_id =")) {
       const classId = Number(bindValues[0]);
       const { data, error } = await supabase

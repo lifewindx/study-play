@@ -5,6 +5,7 @@ import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { VideoPlayer, type VideoPlayerHandle } from "../components/VideoPlayer";
 import { SegmentList } from "../components/SegmentList";
 import { SegmentEditor } from "../components/SegmentEditor";
+import { LessonFormModal } from "../components/LessonFormModal";
 import {
   FlipIcon,
   FullscreenExitIcon,
@@ -46,16 +47,10 @@ export function PlayerPage() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLessonForm, setShowLessonForm] = useState(false);
-  const [lessonTitle, setLessonTitle] = useState("");
-  const [lessonVideoUrl, setLessonVideoUrl] = useState("");
-  const [lessonNotes, setLessonNotes] = useState("");
-  const [notesSaveState, setNotesSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [playCommand, setPlayCommand] = useState(0);
   const [pauseCommand, setPauseCommand] = useState(0);
   const hydratedAllSegmentIdsRef = useRef<Set<number>>(new Set());
   const activeStudySessionRef = useRef<ActiveStudySession | null>(null);
-  const notesLoadedLessonIdRef = useRef<number | null>(null);
-  const notesSaveSequenceRef = useRef(0);
 
   const loadData = useCallback(async () => {
     if (!lessonId) return;
@@ -65,14 +60,7 @@ export function PlayerPage() {
       [Number(lessonId)]
     );
     setLesson(lessonRow ?? null);
-    if (lessonRow && notesLoadedLessonIdRef.current !== lessonRow.id) {
-      notesLoadedLessonIdRef.current = lessonRow.id;
-      setLessonNotes(lessonRow.notes ?? "");
-      setNotesSaveState("idle");
-    }
     if (!lessonRow) {
-      notesLoadedLessonIdRef.current = null;
-      setLessonNotes("");
       setSegments([]);
       return;
     }
@@ -106,32 +94,6 @@ export function PlayerPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  useEffect(() => {
-    if (!lesson || lessonNotes === (lesson.notes ?? "")) return;
-
-    const saveSequence = ++notesSaveSequenceRef.current;
-    const timeoutId = window.setTimeout(async () => {
-      setNotesSaveState("saving");
-      try {
-        const db = await getDb();
-        await db.execute(
-          "UPDATE lessons SET notes = $1, updated_at = datetime('now','localtime') WHERE id = $2",
-          [lessonNotes, lesson.id]
-        );
-        if (notesSaveSequenceRef.current !== saveSequence) return;
-        setLesson((currentLesson) => currentLesson ? { ...currentLesson, notes: lessonNotes } : null);
-        setNotesSaveState("saved");
-      } catch (error) {
-        console.error(error);
-        if (notesSaveSequenceRef.current === saveSequence) {
-          setNotesSaveState("error");
-        }
-      }
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [lesson, lessonNotes]);
 
   useEffect(() => {
     setVideoDuration(0);
@@ -398,21 +360,17 @@ export function PlayerPage() {
 
   function openLessonEditor() {
     if (!lesson) return;
-    setLessonTitle(lesson.title);
-    setLessonVideoUrl(lesson.video_url);
     setShowLessonForm(true);
   }
 
   function closeLessonEditor() {
     setShowLessonForm(false);
-    setLessonTitle("");
-    setLessonVideoUrl("");
   }
 
-  async function handleSaveLesson() {
-    if (!lesson || !lessonTitle.trim() || !lessonVideoUrl.trim()) return;
+  async function handleSaveLesson({ title, videoUrl }: { title: string; videoUrl: string }) {
+    if (!lesson || !title || !videoUrl) return;
     if (
-      lessonVideoUrl.trim() !== lesson.video_url &&
+      videoUrl !== lesson.video_url &&
       segments.length > 0 &&
       !window.confirm("Changing the YouTube link may make existing segments point to the wrong moments. Save anyway?")
     ) {
@@ -421,7 +379,7 @@ export function PlayerPage() {
     const db = await getDb();
     await db.execute(
       "UPDATE lessons SET title = $1, video_url = $2, updated_at = datetime('now','localtime') WHERE id = $3",
-      [lessonTitle.trim(), lessonVideoUrl.trim(), lesson.id]
+      [title, videoUrl, lesson.id]
     );
     closeLessonEditor();
     await loadData();
@@ -617,31 +575,7 @@ export function PlayerPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border p-2.5" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <label htmlFor="lesson-notes" className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
-                    Memo
-                  </label>
-                  <span className="text-[11px]" style={{ color: notesSaveState === "error" ? "var(--danger, #ef4444)" : "var(--text-muted)" }}>
-                    {notesSaveState === "idle" && "Auto save"}
-                    {notesSaveState === "saving" && "Saving..."}
-                    {notesSaveState === "saved" && "Saved"}
-                    {notesSaveState === "error" && "Save failed"}
-                  </span>
-                </div>
-                <textarea
-                  id="lesson-notes"
-                  value={lessonNotes}
-                  onChange={(event) => {
-                    setLessonNotes(event.target.value);
-                    setNotesSaveState("idle");
-                  }}
-                  className="input-field min-h-[8rem] resize-y py-2 text-sm leading-relaxed"
-                  rows={5}
-                  maxLength={2000}
-                  placeholder="연습할 내용이나 주의점을 적어두세요."
-                />
-              </div>
+              <LessonNotes key={lesson.id} lessonId={lesson.id} initialNotes={lesson.notes ?? ""} />
             </div>
           </div>
         )}
@@ -716,41 +650,75 @@ export function PlayerPage() {
       )}
 
       {showLessonForm && (
-        <div className="modal-backdrop" onClick={closeLessonEditor}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                Edit lesson
-              </h2>
-              <p className="mt-1 text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
-                Changing the link may shift segment timing.
-              </p>
-            </div>
-            <input
-              type="text"
-              placeholder="Lesson title"
-              value={lessonTitle}
-              onChange={(e) => setLessonTitle(e.target.value)}
-              className="input-field mb-3"
-              maxLength={100}
-              autoFocus
-            />
-            <input
-              type="text"
-              placeholder="YouTube URL"
-              value={lessonVideoUrl}
-              onChange={(e) => setLessonVideoUrl(e.target.value)}
-              className="input-field mb-4"
-              maxLength={2000}
-              pattern="https?://.+"
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={closeLessonEditor} className="btn-ghost">Cancel</button>
-              <button onClick={handleSaveLesson} className="btn-primary">Save</button>
-            </div>
-          </div>
-        </div>
+        <LessonFormModal
+          mode="edit"
+          initialTitle={lesson.title}
+          initialVideoUrl={lesson.video_url}
+          onClose={closeLessonEditor}
+          onSubmit={handleSaveLesson}
+        />
       )}
+    </div>
+  );
+}
+
+function LessonNotes({ lessonId, initialNotes }: { lessonId: number; initialNotes: string }) {
+  const [notes, setNotes] = useState(initialNotes);
+  const [savedNotes, setSavedNotes] = useState(initialNotes);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const saveSequenceRef = useRef(0);
+
+  useEffect(() => {
+    if (notes === savedNotes) return;
+
+    const saveSequence = ++saveSequenceRef.current;
+    const timeoutId = window.setTimeout(async () => {
+      setSaveState("saving");
+      try {
+        const db = await getDb();
+        await db.execute(
+          "UPDATE lessons SET notes = $1, updated_at = datetime('now','localtime') WHERE id = $2",
+          [notes, lessonId]
+        );
+        if (saveSequenceRef.current !== saveSequence) return;
+        setSavedNotes(notes);
+        setSaveState("saved");
+      } catch (error) {
+        console.error(error);
+        if (saveSequenceRef.current === saveSequence) {
+          setSaveState("error");
+        }
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [lessonId, notes, savedNotes]);
+
+  return (
+    <div className="rounded-2xl border p-2.5" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <label htmlFor={`lesson-notes-${lessonId}`} className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+          Memo
+        </label>
+        <span className="text-[11px]" style={{ color: saveState === "error" ? "var(--danger, #ef4444)" : "var(--text-muted)" }}>
+          {saveState === "idle" && "Auto save"}
+          {saveState === "saving" && "Saving..."}
+          {saveState === "saved" && "Saved"}
+          {saveState === "error" && "Save failed"}
+        </span>
+      </div>
+      <textarea
+        id={`lesson-notes-${lessonId}`}
+        value={notes}
+        onChange={(event) => {
+          setNotes(event.target.value);
+          setSaveState("idle");
+        }}
+        className="input-field min-h-[8rem] resize-y py-2 text-sm leading-relaxed"
+        rows={5}
+        maxLength={2000}
+        placeholder="연습할 내용이나 주의점을 적어두세요."
+      />
     </div>
   );
 }

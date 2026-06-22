@@ -20,6 +20,7 @@
     --warning: #b87a15;
     --success: #11895b;
     --violet: #6f58d9;
+    --violet-soft: rgba(111, 88, 217, 0.12);
     --header-bg: rgba(235, 237, 242, 0.82);
     --nav-active-bg: #111214;
     --nav-active-text: #ffffff;
@@ -44,6 +45,7 @@
     --warning: #f0a51c;
     --success: #1bd48c;
     --violet: #7657ff;
+    --violet-soft: rgba(118, 87, 255, 0.16);
     --header-bg: rgba(13, 15, 16, 0.86);
     --nav-active-bg: var(--surface-strong);
     --nav-active-text: var(--text-primary);

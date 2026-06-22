@@ -4,6 +4,7 @@ import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { Grid2Icon, Grid3Icon, HomeIcon, ListIcon, PencilIcon, TrashIcon } from "../components/Icons";
+import { LessonFormModal } from "../components/LessonFormModal";
 
 type LessonViewMode = "list" | "grid2" | "grid3";
 
@@ -64,8 +65,6 @@ export function LessonPage() {
   const [showClassForm, setShowClassForm] = useState(false);
   const [classTitle, setClassTitle] = useState("");
   const [classDescription, setClassDescription] = useState("");
-  const [title, setTitle] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
   const [viewMode, setViewMode] = useState<LessonViewMode>("grid2");
   const [youtubeMetaByLessonId, setYoutubeMetaByLessonId] = useState<Record<number, YoutubeMeta>>({});
 
@@ -96,22 +95,16 @@ export function LessonPage() {
 
   function openCreateForm() {
     setEditingLessonId(null);
-    setTitle("");
-    setVideoUrl("");
     setShowForm(true);
   }
 
   function openEditForm(lesson: Lesson, e: React.MouseEvent) {
     e.stopPropagation();
     setEditingLessonId(lesson.id);
-    setTitle(lesson.title);
-    setVideoUrl(lesson.video_url);
     setShowForm(true);
   }
 
   function closeForm() {
-    setTitle("");
-    setVideoUrl("");
     setEditingLessonId(null);
     setShowForm(false);
   }
@@ -140,16 +133,15 @@ export function LessonPage() {
     await loadData();
   }
 
-  async function handleSave() {
-    if (!videoUrl.trim()) return;
-    const videoId = getYoutubeVideoId(videoUrl.trim());
-    const youtubeMeta = title.trim() ? null : await fetchYoutubeMeta(videoUrl.trim());
-    const resolvedTitle = title.trim() || youtubeMeta?.title || (videoId ? `YouTube ${videoId}` : "Untitled lesson");
+  async function handleSave({ title, videoUrl }: { title: string; videoUrl: string }) {
+    const videoId = getYoutubeVideoId(videoUrl);
+    const youtubeMeta = title ? null : await fetchYoutubeMeta(videoUrl);
+    const resolvedTitle = title || youtubeMeta?.title || (videoId ? `YouTube ${videoId}` : "Untitled lesson");
     const db = await getDb();
     if (editingLessonId !== null) {
       await db.execute(
         "UPDATE lessons SET title = $1, video_url = $2, updated_at = datetime('now','localtime') WHERE id = $3",
-        [resolvedTitle, videoUrl.trim(), editingLessonId]
+        [resolvedTitle, videoUrl, editingLessonId]
       );
     } else {
       const maxOrder = await db.select<[{ max: number }]>(
@@ -162,7 +154,7 @@ export function LessonPage() {
         [
           Number(classId),
           resolvedTitle,
-          videoUrl.trim(),
+          videoUrl,
           "youtube",
           maxOrder[0]?.max ?? 0,
         ]
@@ -321,44 +313,14 @@ export function LessonPage() {
       </div>
 
       {showForm && (
-        <div className="modal-backdrop" onClick={closeForm}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                {editingLessonId !== null ? "Edit lesson" : "New lesson"}
-              </h2>
-              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                Add a YouTube link for focused loop practice.
-              </p>
-            </div>
-            <input
-              type="text"
-              placeholder="Lesson title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input-field mb-3"
-              maxLength={100}
-              autoFocus
-            />
-            <input
-              type="text"
-              placeholder="YouTube URL (e.g., https://youtube.com/watch?v=...)"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              className="input-field mb-4"
-              maxLength={2000}
-              pattern="https?://.+"
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={closeForm} className="btn-ghost">
-                Cancel
-              </button>
-              <button onClick={handleSave} className="btn-primary">
-                {editingLessonId !== null ? "Save" : "Create"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <LessonFormModal
+          key={editingLessonId ?? "new"}
+          mode={editingLessonId === null ? "create" : "edit"}
+          initialTitle={editingLessonId === null ? "" : lessons.find((lesson) => lesson.id === editingLessonId)?.title}
+          initialVideoUrl={editingLessonId === null ? "" : lessons.find((lesson) => lesson.id === editingLessonId)?.video_url}
+          onClose={closeForm}
+          onSubmit={handleSave}
+        />
       )}
 
       {showClassForm && (
@@ -454,7 +416,10 @@ export function LessonPage() {
                         : youtubeMeta.title ?? "YouTube title unavailable"}
                     </p>
                     {youtubeMeta?.channelName && (
-                      <p className="mt-0.5 truncate text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>
+                      <p
+                        className="mt-1 w-fit max-w-full truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-snug"
+                        style={{ color: "var(--violet)", backgroundColor: "var(--violet-soft)" }}
+                      >
                         {youtubeMeta.channelName}
                       </p>
                     )}
