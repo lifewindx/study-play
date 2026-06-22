@@ -48,6 +48,8 @@ export function PlayerPage() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonVideoUrl, setLessonVideoUrl] = useState("");
+  const [lessonNotes, setLessonNotes] = useState("");
+  const [notesSaveState, setNotesSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [playCommand, setPlayCommand] = useState(0);
   const [pauseCommand, setPauseCommand] = useState(0);
   const hydratedAllSegmentIdsRef = useRef<Set<number>>(new Set());
@@ -61,6 +63,8 @@ export function PlayerPage() {
       [Number(lessonId)]
     );
     setLesson(lessonRow ?? null);
+    setLessonNotes(lessonRow?.notes ?? "");
+    setNotesSaveState("idle");
     if (!lessonRow) {
       setSegments([]);
       return;
@@ -228,6 +232,28 @@ export function PlayerPage() {
       setSegmentError(error instanceof Error ? error.message : "Failed to save segment.");
     } finally {
       setIsSavingSegment(false);
+    }
+  }
+
+  async function handleSaveNotes() {
+    if (!lesson || notesSaveState === "saving") return;
+    if (lessonNotes === (lesson.notes ?? "")) {
+      setNotesSaveState("saved");
+      return;
+    }
+
+    setNotesSaveState("saving");
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE lessons SET notes = $1, updated_at = datetime('now','localtime') WHERE id = $2",
+        [lessonNotes, lesson.id]
+      );
+      setLesson((currentLesson) => currentLesson ? { ...currentLesson, notes: lessonNotes } : null);
+      setNotesSaveState("saved");
+    } catch (error) {
+      console.error(error);
+      setNotesSaveState("error");
     }
   }
 
@@ -507,73 +533,112 @@ export function PlayerPage() {
 
         {!isFullscreen && (
           <div className="player-controls mt-3 sm:mt-4">
-            <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
-              {activeSegment ? (
-                <div className="min-w-0">
-                  <div className="truncate text-sm sm:text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                    {activeSegment.label || `Seg ${segments.indexOf(activeSegment) + 1}`}
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] lg:items-end">
+              <div className="min-w-0">
+                <div className="mb-2 flex items-center justify-between gap-2 sm:mb-3">
+                  {activeSegment ? (
+                    <div className="min-w-0">
+                      <div className="truncate text-sm sm:text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                        {activeSegment.label || `Seg ${segments.indexOf(activeSegment) + 1}`}
+                      </div>
+                      <div className="text-xs font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {formatTimeShort(currentTime)} / {formatTimeShort(activeSegmentEndTime)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
+                      Add a segment to play
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <button
+                    onClick={handlePlayPause}
+                    className="btn-primary min-w-[64px] sm:min-w-24 gap-1.5 disabled:opacity-45 flex-shrink-0"
+                    disabled={segments.length === 0}
+                  >
+                    {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
+                    {isPlaying ? "Pause" : "Play"}
+                  </button>
+
+                  <div className="control-group">
+                    <button onClick={() => handleSpeedChange(-0.1)} className="control-chip px-2 sm:px-3" aria-label="Slower">−</button>
+                    <span className="min-w-[2.4rem] text-center text-xs sm:text-sm font-mono" style={{ color: "var(--text-primary)" }}>
+                      {speed}x
+                    </span>
+                    <button onClick={() => handleSpeedChange(0.1)} className="control-chip px-2 sm:px-3" aria-label="Faster">+</button>
+                    <button onClick={() => setSpeed(1)} className="icon-button h-8 w-8" aria-label="Reset speed">
+                      <GaugeIcon className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <div className="text-xs font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {formatTimeShort(currentTime)} / {formatTimeShort(activeSegmentEndTime)}
+
+                  <div className="control-group">
+                    <button onClick={handleRotate} className="control-chip" aria-label="Rotate">
+                      <RotateIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setFlipH(!flipH)}
+                      className="control-chip"
+                      style={{
+                        backgroundColor: flipH ? "var(--accent)" : "var(--bg-tertiary)",
+                        color: flipH ? "var(--accent-contrast)" : "var(--text-primary)",
+                      }}
+                      aria-label="Flip horizontally"
+                    >
+                      <FlipIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setFlipV(!flipV)}
+                      className="control-chip"
+                      style={{
+                        backgroundColor: flipV ? "var(--accent)" : "var(--bg-tertiary)",
+                        color: flipV ? "var(--accent-contrast)" : "var(--text-primary)",
+                      }}
+                      aria-label="Flip vertically"
+                    >
+                      <FlipIcon className="h-4 w-4 rotate-90" />
+                    </button>
+                    <button onClick={toggleFullscreen} className="control-chip" aria-label="Fullscreen">
+                      <FullscreenIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <div className="text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
-                  Add a segment to play
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={handlePlayPause}
-                className="btn-primary min-w-[64px] sm:min-w-24 gap-1.5 disabled:opacity-45 flex-shrink-0"
-                disabled={segments.length === 0}
-              >
-                {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
-                {isPlaying ? "Pause" : "Play"}
-              </button>
-
-              <div className="control-group">
-                <button onClick={() => handleSpeedChange(-0.1)} className="control-chip px-2 sm:px-3" aria-label="Slower">−</button>
-                <span className="min-w-[2.4rem] text-center text-xs sm:text-sm font-mono" style={{ color: "var(--text-primary)" }}>
-                  {speed}x
-                </span>
-                <button onClick={() => handleSpeedChange(0.1)} className="control-chip px-2 sm:px-3" aria-label="Faster">+</button>
-                <button onClick={() => setSpeed(1)} className="icon-button h-8 w-8" aria-label="Reset speed">
-                  <GaugeIcon className="h-3.5 w-3.5" />
-                </button>
               </div>
 
-              <div className="control-group">
-                <button onClick={handleRotate} className="control-chip" aria-label="Rotate">
-                  <RotateIcon className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setFlipH(!flipH)}
-                  className="control-chip"
-                  style={{
-                    backgroundColor: flipH ? "var(--accent)" : "var(--bg-tertiary)",
-                    color: flipH ? "var(--accent-contrast)" : "var(--text-primary)",
+              <div className="rounded-2xl border p-2.5" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label htmlFor="lesson-notes" className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                    Memo
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px]" style={{ color: notesSaveState === "error" ? "var(--danger, #ef4444)" : "var(--text-muted)" }}>
+                      {notesSaveState === "saving" && "Saving..."}
+                      {notesSaveState === "saved" && "Saved"}
+                      {notesSaveState === "error" && "Save failed"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSaveNotes}
+                      className="btn-ghost h-7 px-2.5 text-xs"
+                      disabled={notesSaveState === "saving" || lessonNotes === (lesson.notes ?? "")}
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  id="lesson-notes"
+                  value={lessonNotes}
+                  onChange={(event) => {
+                    setLessonNotes(event.target.value);
+                    setNotesSaveState("idle");
                   }}
-                  aria-label="Flip horizontally"
-                >
-                  <FlipIcon className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setFlipV(!flipV)}
-                  className="control-chip"
-                  style={{
-                    backgroundColor: flipV ? "var(--accent)" : "var(--bg-tertiary)",
-                    color: flipV ? "var(--accent-contrast)" : "var(--text-primary)",
-                  }}
-                  aria-label="Flip vertically"
-                >
-                  <FlipIcon className="h-4 w-4 rotate-90" />
-                </button>
-                <button onClick={toggleFullscreen} className="control-chip" aria-label="Fullscreen">
-                  <FullscreenIcon className="h-4 w-4" />
-                </button>
+                  className="input-field min-h-[3.75rem] resize-y py-1.5 text-xs leading-relaxed"
+                  rows={2}
+                  maxLength={2000}
+                  placeholder="연습할 내용이나 주의점을 적어두세요."
+                />
               </div>
             </div>
           </div>

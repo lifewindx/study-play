@@ -370,6 +370,18 @@ class SupabaseDB implements StudyDb {
       return { rowsAffected: 1 };
     }
 
+    if (normalized.startsWith("UPDATE lessons SET notes")) {
+      const { error } = await supabase
+        .from("lessons")
+        .update({
+          notes: String(bindValues[0] ?? ""),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", Number(bindValues[1]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
     if (normalized.startsWith("UPDATE segments SET sort_order")) {
       const { error } = await supabase
         .from("segments")

@@ -16,6 +16,7 @@ export interface Lesson {
   video_url: string;
   video_type: VideoType;
   local_file_path: string | null;
+  notes: string;
   sort_order: number;
   created_at: string;
   updated_at: string;
