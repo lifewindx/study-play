@@ -9,6 +9,7 @@ type LessonViewMode = "list" | "grid2" | "grid3";
 
 interface YoutubeMeta {
   title: string | null;
+  channelName: string | null;
   thumbnailUrl: string;
 }
 
@@ -39,12 +40,15 @@ function getYoutubeThumbnailFallbackUrl(url: string): string | null {
   return videoId ? `https://img.youtube.com/vi/${videoId}/default.jpg` : null;
 }
 
-async function fetchYoutubeTitle(url: string): Promise<string | null> {
+async function fetchYoutubeMeta(url: string): Promise<Omit<YoutubeMeta, "thumbnailUrl"> | null> {
   try {
     const response = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`);
     if (!response.ok) return null;
-    const data = await response.json() as { title?: string };
-    return data.title?.trim() || null;
+    const data = await response.json() as { title?: string; author_name?: string };
+    return {
+      title: data.title?.trim() || null,
+      channelName: data.author_name?.trim() || null,
+    };
   } catch {
     return null;
   }
@@ -139,7 +143,8 @@ export function LessonPage() {
   async function handleSave() {
     if (!videoUrl.trim()) return;
     const videoId = getYoutubeVideoId(videoUrl.trim());
-    const resolvedTitle = title.trim() || await fetchYoutubeTitle(videoUrl.trim()) || (videoId ? `YouTube ${videoId}` : "Untitled lesson");
+    const youtubeMeta = title.trim() ? null : await fetchYoutubeMeta(videoUrl.trim());
+    const resolvedTitle = title.trim() || youtubeMeta?.title || (videoId ? `YouTube ${videoId}` : "Untitled lesson");
     const db = await getDb();
     if (editingLessonId !== null) {
       await db.execute(
@@ -221,10 +226,14 @@ export function LessonPage() {
     async function loadYoutubeMeta() {
       const entries = await Promise.all(
         youtubeLessons.map(async (lesson) => {
-          const title = await fetchYoutubeTitle(lesson.video_url);
+          const metadata = await fetchYoutubeMeta(lesson.video_url);
           const thumbnailUrl = getYoutubeThumbnailUrl(lesson.video_url);
           if (!thumbnailUrl) return null;
-          return [lesson.id, { title, thumbnailUrl }] as const;
+          return [lesson.id, {
+            title: metadata?.title ?? null,
+            channelName: metadata?.channelName ?? null,
+            thumbnailUrl,
+          }] as const;
         })
       );
       if (cancelled) return;
@@ -438,11 +447,18 @@ export function LessonPage() {
                   {lesson.title}
                 </h3>
                 {lesson.video_type === "youtube" && (
-                  <p className="mt-0.5 line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
-                    {youtubeMeta === undefined
-                      ? "YouTube title loading..."
-                      : youtubeMeta.title ?? "YouTube title unavailable"}
-                  </p>
+                  <div className="mt-0.5 min-w-0">
+                    <p className="line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
+                      {youtubeMeta === undefined
+                        ? "YouTube title loading..."
+                        : youtubeMeta.title ?? "YouTube title unavailable"}
+                    </p>
+                    {youtubeMeta?.channelName && (
+                      <p className="mt-0.5 truncate text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>
+                        {youtubeMeta.channelName}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="flex shrink-0 items-center justify-end gap-1">
