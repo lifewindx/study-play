@@ -54,6 +54,8 @@ export function PlayerPage() {
   const [pauseCommand, setPauseCommand] = useState(0);
   const hydratedAllSegmentIdsRef = useRef<Set<number>>(new Set());
   const activeStudySessionRef = useRef<ActiveStudySession | null>(null);
+  const notesLoadedLessonIdRef = useRef<number | null>(null);
+  const notesSaveSequenceRef = useRef(0);
 
   const loadData = useCallback(async () => {
     if (!lessonId) return;
@@ -63,9 +65,14 @@ export function PlayerPage() {
       [Number(lessonId)]
     );
     setLesson(lessonRow ?? null);
-    setLessonNotes(lessonRow?.notes ?? "");
-    setNotesSaveState("idle");
+    if (lessonRow && notesLoadedLessonIdRef.current !== lessonRow.id) {
+      notesLoadedLessonIdRef.current = lessonRow.id;
+      setLessonNotes(lessonRow.notes ?? "");
+      setNotesSaveState("idle");
+    }
     if (!lessonRow) {
+      notesLoadedLessonIdRef.current = null;
+      setLessonNotes("");
       setSegments([]);
       return;
     }
@@ -99,6 +106,32 @@ export function PlayerPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!lesson || lessonNotes === (lesson.notes ?? "")) return;
+
+    const saveSequence = ++notesSaveSequenceRef.current;
+    const timeoutId = window.setTimeout(async () => {
+      setNotesSaveState("saving");
+      try {
+        const db = await getDb();
+        await db.execute(
+          "UPDATE lessons SET notes = $1, updated_at = datetime('now','localtime') WHERE id = $2",
+          [lessonNotes, lesson.id]
+        );
+        if (notesSaveSequenceRef.current !== saveSequence) return;
+        setLesson((currentLesson) => currentLesson ? { ...currentLesson, notes: lessonNotes } : null);
+        setNotesSaveState("saved");
+      } catch (error) {
+        console.error(error);
+        if (notesSaveSequenceRef.current === saveSequence) {
+          setNotesSaveState("error");
+        }
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [lesson, lessonNotes]);
 
   useEffect(() => {
     setVideoDuration(0);
@@ -232,28 +265,6 @@ export function PlayerPage() {
       setSegmentError(error instanceof Error ? error.message : "Failed to save segment.");
     } finally {
       setIsSavingSegment(false);
-    }
-  }
-
-  async function handleSaveNotes() {
-    if (!lesson || notesSaveState === "saving") return;
-    if (lessonNotes === (lesson.notes ?? "")) {
-      setNotesSaveState("saved");
-      return;
-    }
-
-    setNotesSaveState("saving");
-    try {
-      const db = await getDb();
-      await db.execute(
-        "UPDATE lessons SET notes = $1, updated_at = datetime('now','localtime') WHERE id = $2",
-        [lessonNotes, lesson.id]
-      );
-      setLesson((currentLesson) => currentLesson ? { ...currentLesson, notes: lessonNotes } : null);
-      setNotesSaveState("saved");
-    } catch (error) {
-      console.error(error);
-      setNotesSaveState("error");
     }
   }
 
@@ -533,7 +544,7 @@ export function PlayerPage() {
 
         {!isFullscreen && (
           <div className="player-controls mt-3 sm:mt-4">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] lg:items-end">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-stretch">
               <div className="min-w-0">
                 <div className="mb-2 flex items-center justify-between gap-2 sm:mb-3">
                   {activeSegment ? (
@@ -611,21 +622,12 @@ export function PlayerPage() {
                   <label htmlFor="lesson-notes" className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
                     Memo
                   </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px]" style={{ color: notesSaveState === "error" ? "var(--danger, #ef4444)" : "var(--text-muted)" }}>
-                      {notesSaveState === "saving" && "Saving..."}
-                      {notesSaveState === "saved" && "Saved"}
-                      {notesSaveState === "error" && "Save failed"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleSaveNotes}
-                      className="btn-ghost h-7 px-2.5 text-xs"
-                      disabled={notesSaveState === "saving" || lessonNotes === (lesson.notes ?? "")}
-                    >
-                      Save
-                    </button>
-                  </div>
+                  <span className="text-[11px]" style={{ color: notesSaveState === "error" ? "var(--danger, #ef4444)" : "var(--text-muted)" }}>
+                    {notesSaveState === "idle" && "Auto save"}
+                    {notesSaveState === "saving" && "Saving..."}
+                    {notesSaveState === "saved" && "Saved"}
+                    {notesSaveState === "error" && "Save failed"}
+                  </span>
                 </div>
                 <textarea
                   id="lesson-notes"
@@ -634,8 +636,8 @@ export function PlayerPage() {
                     setLessonNotes(event.target.value);
                     setNotesSaveState("idle");
                   }}
-                  className="input-field min-h-[3.75rem] resize-y py-1.5 text-xs leading-relaxed"
-                  rows={2}
+                  className="input-field min-h-[8rem] resize-y py-2 text-sm leading-relaxed"
+                  rows={5}
                   maxLength={2000}
                   placeholder="연습할 내용이나 주의점을 적어두세요."
                 />
