@@ -77,8 +77,13 @@ export function LessonPage() {
       "SELECT * FROM lessons WHERE class_id = $1 ORDER BY sort_order, id",
       [Number(classId)]
     );
-    await ensureAllSegmentsForLessons(lessonRows.map((lesson) => lesson.id));
     setLessons(lessonRows);
+
+    try {
+      await ensureAllSegmentsForLessons(lessonRows.map((lesson) => lesson.id));
+    } catch (error) {
+      console.error("Failed to ensure default All segments", error);
+    }
   }, [classId]);
 
   useEffect(() => {

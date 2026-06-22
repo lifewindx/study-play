@@ -72,18 +72,24 @@ export function PlayerPage() {
       );
       setClassTitle(classRow?.title ?? "");
     }
-    let segmentRows = await db.select<Segment[]>(
+    const segmentRows = await db.select<Segment[]>(
       "SELECT * FROM segments WHERE lesson_id = $1 ORDER BY sort_order, id",
       [Number(lessonId)]
     );
-    const insertedCount = await ensureAllSegmentsForLessons([Number(lessonId)]);
-    if (insertedCount > 0) {
-      segmentRows = await db.select<Segment[]>(
-        "SELECT * FROM segments WHERE lesson_id = $1 ORDER BY sort_order, id",
-        [Number(lessonId)]
-      );
-    }
     setSegments(segmentRows);
+
+    try {
+      const insertedCount = await ensureAllSegmentsForLessons([Number(lessonId)]);
+      if (insertedCount > 0) {
+        const refreshedSegmentRows = await db.select<Segment[]>(
+          "SELECT * FROM segments WHERE lesson_id = $1 ORDER BY sort_order, id",
+          [Number(lessonId)]
+        );
+        setSegments(refreshedSegmentRows);
+      }
+    } catch (error) {
+      console.error("Failed to ensure default All segment", error);
+    }
   }, [lessonId]);
 
   useEffect(() => {

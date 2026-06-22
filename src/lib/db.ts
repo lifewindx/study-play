@@ -69,23 +69,23 @@ export async function ensureAllSegmentsForLessons(lessonIds: number[]): Promise<
     segmentsByLessonId.set(segment.lesson_id, list);
   }
 
-  const userId = await getUserId();
-  const inserts = uniqueLessonIds
-    .filter((lessonId) => !(segmentsByLessonId.get(lessonId) ?? []).some(isAllSegment))
-    .map((lessonId) => {
-      const sortOrders = (segmentsByLessonId.get(lessonId) ?? []).map((segment) => segment.sort_order);
-      return {
-        user_id: userId,
-        lesson_id: lessonId,
-        label: "All",
-        start_time: 0,
-        end_time: 0,
-        loop_gap: 0,
-        sort_order: sortOrders.length > 0 ? Math.min(...sortOrders) - 1 : 0,
-      };
-    });
+  const lessonIdsMissingAll = uniqueLessonIds
+    .filter((lessonId) => !(segmentsByLessonId.get(lessonId) ?? []).some(isAllSegment));
+  if (lessonIdsMissingAll.length === 0) return 0;
 
-  if (inserts.length === 0) return 0;
+  const userId = await getUserId();
+  const inserts = lessonIdsMissingAll.map((lessonId) => {
+    const sortOrders = (segmentsByLessonId.get(lessonId) ?? []).map((segment) => segment.sort_order);
+    return {
+      user_id: userId,
+      lesson_id: lessonId,
+      label: "All",
+      start_time: 0,
+      end_time: 0,
+      loop_gap: 0,
+      sort_order: sortOrders.length > 0 ? Math.min(...sortOrders) - 1 : 0,
+    };
+  });
 
   const results = await Promise.all(inserts.map(async (insert) => {
     const { error } = await supabase.from("segments").insert(insert);
