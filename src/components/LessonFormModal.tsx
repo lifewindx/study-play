@@ -10,7 +10,7 @@ interface LessonFormModalProps {
   initialTitle?: string;
   initialVideoUrl?: string;
   onClose: () => void;
-  onSubmit: (data: LessonFormData) => Promise<void>;
+  onSubmit: (data: LessonFormData) => Promise<string | void>;
 }
 
 export function LessonFormModal({
@@ -23,12 +23,18 @@ export function LessonFormModal({
   const [title, setTitle] = useState(initialTitle);
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit() {
     if (!videoUrl.trim() || isSubmitting) return;
     setIsSubmitting(true);
+    setErrorMessage("");
     try {
-      await onSubmit({ title: title.trim(), videoUrl: videoUrl.trim() });
+      const submitError = await onSubmit({ title: title.trim(), videoUrl: videoUrl.trim() });
+      if (submitError) setErrorMessage(submitError);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("저장에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
     }
@@ -60,11 +66,20 @@ export function LessonFormModal({
           type="text"
           placeholder="YouTube URL (e.g., https://youtube.com/watch?v=...)"
           value={videoUrl}
-          onChange={(event) => setVideoUrl(event.target.value)}
-          className="input-field mb-4"
+          onChange={(event) => {
+            setVideoUrl(event.target.value);
+            setErrorMessage("");
+          }}
+          className={`input-field ${errorMessage ? "mb-2" : "mb-4"}`}
           maxLength={2000}
           pattern="https?://.+"
+          aria-invalid={Boolean(errorMessage)}
         />
+        {errorMessage && (
+          <p className="mb-4 text-xs font-medium text-red-500" role="alert">
+            {errorMessage}
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="btn-ghost" disabled={isSubmitting}>Cancel</button>
           <button onClick={handleSubmit} className="btn-primary" disabled={isSubmitting || !videoUrl.trim()}>

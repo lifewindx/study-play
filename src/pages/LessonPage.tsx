@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { Grid2Icon, Grid3Icon, HomeIcon, ListIcon, PencilIcon, TrashIcon } from "../components/Icons";
+import { Grid2Icon, Grid3Icon, HomeIcon, ListIcon, PencilIcon, XIcon } from "../components/Icons";
 import { LessonFormModal } from "../components/LessonFormModal";
 
 type LessonViewMode = "list" | "grid2" | "grid3";
@@ -135,6 +135,11 @@ export function LessonPage() {
 
   async function handleSave({ title, videoUrl }: { title: string; videoUrl: string }) {
     const videoId = getYoutubeVideoId(videoUrl);
+    const isDuplicate = videoId !== null && lessons.some((lesson) => (
+      lesson.id !== editingLessonId && getYoutubeVideoId(lesson.video_url) === videoId
+    ));
+    if (isDuplicate) return "이미 등록된 영상입니다.";
+
     const youtubeMeta = title ? null : await fetchYoutubeMeta(videoUrl);
     const resolvedTitle = title || youtubeMeta?.title || (videoId ? `YouTube ${videoId}` : "Untitled lesson");
     const db = await getDb();
@@ -369,7 +374,7 @@ export function LessonPage() {
           const thumbnailUrl = youtubeMeta?.thumbnailUrl ?? getYoutubeThumbnailUrl(lesson.video_url);
           const thumbnailFallbackUrl = getYoutubeThumbnailFallbackUrl(lesson.video_url);
           const noteSummary = lesson.notes?.replace(/\s+/g, " ").trim();
-          const cardClassName = "card flex min-h-full w-full cursor-pointer items-center gap-3 px-3 py-2";
+          const cardClassName = "card group flex min-h-full w-full cursor-pointer flex-col px-3 py-2";
           const thumbnailClassName = "h-[72px] w-32";
 
           return (
@@ -383,77 +388,79 @@ export function LessonPage() {
                 draggingLessonId === lesson.id ? "opacity-50" : ""
               }`}
             >
-              <div
-                className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-2xl`}
-                style={{ backgroundColor: "var(--bg-tertiary)" }}
-              >
-                {thumbnailUrl ? (
-                  <img
-                    src={thumbnailUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      if (!thumbnailFallbackUrl || e.currentTarget.src === thumbnailFallbackUrl) return;
-                      e.currentTarget.src = thumbnailFallbackUrl;
-                    }}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                    Local video
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
-                  {lesson.title}
-                </h3>
-                {noteSummary && (
-                  <p
-                    className="mt-0.5 truncate text-xs"
-                    style={{ color: "var(--text-secondary)" }}
-                    title={lesson.notes}
-                  >
-                    {noteSummary}
-                  </p>
-                )}
-                {lesson.video_type === "youtube" && (
-                  <div className="mt-0.5 min-w-0">
-                    <p className="line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
-                      {youtubeMeta === undefined
-                        ? "YouTube title loading..."
-                        : youtubeMeta.title ?? "YouTube title unavailable"}
-                    </p>
-                    {youtubeMeta?.channelName && (
-                      <p
-                        className="mt-1 w-fit max-w-full truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-snug"
-                        style={{ color: "var(--violet)", backgroundColor: "var(--violet-soft)" }}
-                      >
-                        {youtubeMeta.channelName}
+              <div className="flex w-full flex-1 items-center gap-3">
+                <div
+                  className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-2xl`}
+                  style={{ backgroundColor: "var(--bg-tertiary)" }}
+                >
+                  {thumbnailUrl ? (
+                    <img
+                      src={thumbnailUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        if (!thumbnailFallbackUrl || e.currentTarget.src === thumbnailFallbackUrl) return;
+                        e.currentTarget.src = thumbnailFallbackUrl;
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      Local video
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
+                    {lesson.title}
+                  </h3>
+                  {lesson.video_type === "youtube" && (
+                    <div className="mt-0.5 min-w-0">
+                      <p className="line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
+                        {youtubeMeta === undefined
+                          ? "YouTube title loading..."
+                          : youtubeMeta.title ?? "YouTube title unavailable"}
                       </p>
-                    )}
-                  </div>
-                )}
+                      {youtubeMeta?.channelName && (
+                        <p
+                          className="mt-1 w-fit max-w-full truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-snug"
+                          style={{ color: "var(--violet)", backgroundColor: "var(--violet-soft)" }}
+                        >
+                          {youtubeMeta.channelName}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-col items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                  <button
+                    data-no-reorder
+                    onClick={(e) => openEditForm(lesson, e)}
+                    className="icon-button h-8 w-8"
+                    aria-label="Edit lesson"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    data-no-reorder
+                    onClick={(e) => handleDelete(lesson.id, e)}
+                    className="icon-button h-8 w-8"
+                    aria-label="Delete lesson"
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center justify-end gap-1">
-                <button
-                  data-no-reorder
-                  onClick={(e) => openEditForm(lesson, e)}
-                  className="icon-button"
-                  aria-label="Edit lesson"
+              {noteSummary && (
+                <p
+                  className="mt-2 w-full truncate border-t pt-2 text-xs font-medium"
+                  style={{ color: "var(--violet)", borderColor: "var(--border-color)" }}
+                  title={lesson.notes}
                 >
-                  <PencilIcon className="h-4 w-4" />
-                </button>
-                <button
-                  data-no-reorder
-                  onClick={(e) => handleDelete(lesson.id, e)}
-                  className="icon-button"
-                  aria-label="Delete lesson"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
+                  {noteSummary}
+                </p>
+              )}
             </div>
           );
         })}

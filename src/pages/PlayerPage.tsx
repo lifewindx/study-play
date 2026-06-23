@@ -665,7 +665,6 @@ export function PlayerPage() {
 function LessonNotes({ lessonId, initialNotes }: { lessonId: number; initialNotes: string }) {
   const [notes, setNotes] = useState(initialNotes);
   const [savedNotes, setSavedNotes] = useState(initialNotes);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const saveSequenceRef = useRef(0);
 
   useEffect(() => {
@@ -673,7 +672,6 @@ function LessonNotes({ lessonId, initialNotes }: { lessonId: number; initialNote
 
     const saveSequence = ++saveSequenceRef.current;
     const timeoutId = window.setTimeout(async () => {
-      setSaveState("saving");
       try {
         const db = await getDb();
         await db.execute(
@@ -682,12 +680,8 @@ function LessonNotes({ lessonId, initialNotes }: { lessonId: number; initialNote
         );
         if (saveSequenceRef.current !== saveSequence) return;
         setSavedNotes(notes);
-        setSaveState("saved");
       } catch (error) {
         console.error(error);
-        if (saveSequenceRef.current === saveSequence) {
-          setSaveState("error");
-        }
       }
     }, 400);
 
@@ -695,31 +689,16 @@ function LessonNotes({ lessonId, initialNotes }: { lessonId: number; initialNote
   }, [lessonId, notes, savedNotes]);
 
   return (
-    <div className="rounded-2xl border p-2.5" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <label htmlFor={`lesson-notes-${lessonId}`} className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
-          Memo
-        </label>
-        <span className="text-[11px]" style={{ color: saveState === "error" ? "var(--danger, #ef4444)" : "var(--text-muted)" }}>
-          {saveState === "idle" && "Auto save"}
-          {saveState === "saving" && "Saving..."}
-          {saveState === "saved" && "Saved"}
-          {saveState === "error" && "Save failed"}
-        </span>
-      </div>
-      <textarea
-        id={`lesson-notes-${lessonId}`}
-        value={notes}
-        onChange={(event) => {
-          setNotes(event.target.value);
-          setSaveState("idle");
-        }}
-        className="input-field min-h-[8rem] resize-y py-2 text-sm leading-relaxed"
-        rows={5}
-        maxLength={2000}
-        placeholder="연습할 내용이나 주의점을 적어두세요."
-      />
-    </div>
+    <textarea
+      id={`lesson-notes-${lessonId}`}
+      aria-label="Memo"
+      value={notes}
+      onChange={(event) => setNotes(event.target.value)}
+      className="input-field min-h-[5.5rem] resize-y py-2 text-sm leading-relaxed"
+      rows={3}
+      maxLength={2000}
+      placeholder="Memo"
+    />
   );
 }
 
