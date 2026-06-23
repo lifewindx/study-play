@@ -368,6 +368,7 @@ export function LessonPage() {
           const youtubeMeta = youtubeMetaByLessonId[lesson.id];
           const thumbnailUrl = youtubeMeta?.thumbnailUrl ?? getYoutubeThumbnailUrl(lesson.video_url);
           const thumbnailFallbackUrl = getYoutubeThumbnailFallbackUrl(lesson.video_url);
+          const noteSummary = lesson.notes?.replace(/\s+/g, " ").trim();
           const cardClassName = "card flex min-h-full w-full cursor-pointer items-center gap-3 px-3 py-2";
           const thumbnailClassName = "h-[72px] w-32";
 
@@ -408,6 +409,15 @@ export function LessonPage() {
                 <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
                   {lesson.title}
                 </h3>
+                {noteSummary && (
+                  <p
+                    className="mt-0.5 truncate text-xs"
+                    style={{ color: "var(--text-secondary)" }}
+                    title={lesson.notes}
+                  >
+                    {noteSummary}
+                  </p>
+                )}
                 {lesson.video_type === "youtube" && (
                   <div className="mt-0.5 min-w-0">
                     <p className="line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>

@@ -51,6 +51,12 @@ export function usePointerReorder(
       preview.removeAttribute("data-reorder-id");
       preview.classList.add("reorder-preview");
       preview.style.width = `${rect.width}px`;
+      preview.style.height = `${rect.height}px`;
+      preview.style.minWidth = "0";
+      preview.style.minHeight = "0";
+      preview.style.maxWidth = `${rect.width}px`;
+      preview.style.maxHeight = `${rect.height}px`;
+      preview.style.overflow = "hidden";
       preview.style.left = `${event.clientX - (event.clientX - rect.left)}px`;
       preview.style.top = `${event.clientY - (event.clientY - rect.top)}px`;
       document.body.appendChild(preview);
