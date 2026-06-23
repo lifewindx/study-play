@@ -19,6 +19,8 @@
     --accent-soft: rgba(17, 18, 20, 0.08);
     --warning: #b87a15;
     --class-title: #2563b8;
+    --favorite: #db3f68;
+    --favorite-soft: rgba(219, 63, 104, 0.12);
     --success: #11895b;
     --violet: #6f58d9;
     --violet-soft: rgba(111, 88, 217, 0.12);
@@ -45,6 +47,8 @@
     --accent-soft: rgba(32, 184, 240, 0.14);
     --warning: #f0a51c;
     --class-title: #38bdf8;
+    --favorite: #fb7185;
+    --favorite-soft: rgba(251, 113, 133, 0.14);
     --success: #1bd48c;
     --violet: #7657ff;
     --violet-soft: rgba(118, 87, 255, 0.16);
@@ -135,6 +139,14 @@
   }
   .card:hover {
     border-color: var(--card-hover-border);
+  }
+
+  .lesson-card {
+    backdrop-filter: none;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    contain: paint;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 110px;
   }
   .input-field {
     @apply w-full px-3 py-2 rounded-xl border text-sm outline-none transition-colors duration-150;

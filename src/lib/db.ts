@@ -390,6 +390,30 @@ class SupabaseDB implements StudyDb {
       return { rowsAffected: 1 };
     }
 
+    if (normalized.startsWith("UPDATE lessons SET difficulty")) {
+      const { error } = await supabase
+        .from("lessons")
+        .update({
+          difficulty: Math.max(0, Math.min(5, Number(bindValues[0] ?? 0))),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", Number(bindValues[1]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
+    if (normalized.startsWith("UPDATE lessons SET is_favorite")) {
+      const { error } = await supabase
+        .from("lessons")
+        .update({
+          is_favorite: Boolean(bindValues[0]),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", Number(bindValues[1]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
     if (normalized.startsWith("UPDATE segments SET sort_order")) {
       const { error } = await supabase
         .from("segments")

@@ -183,7 +183,7 @@ function closeForm() {
             data-reorder-scope="classes"
             onClick={() => navigate(`/classes/${cls.id}`)}
             onPointerDown={(e) => startReorderDrag(cls.id, e)}
-            className={`card flex cursor-pointer items-center gap-3 rounded-2xl border-l-[3px] py-3 pl-6 pr-3 ${
+            className={`card group flex cursor-pointer items-center gap-3 rounded-2xl border-l-[3px] py-3 pl-6 pr-3 ${
               draggingClassId === cls.id ? "opacity-50" : ""
             }`}
             style={{ borderLeftColor: "var(--accent)" }}
@@ -205,7 +205,7 @@ function closeForm() {
               >
                 {lessonCountByClassId[cls.id] ?? 0}
               </span>
-              <div className="flex flex-col items-center justify-center">
+              <div className="flex flex-col items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                 <button
                   data-no-reorder
                   onClick={(e) => openEditForm(cls, e)}

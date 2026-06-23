@@ -6,6 +6,8 @@ import { VideoPlayer, type VideoPlayerHandle } from "../components/VideoPlayer";
 import { SegmentList } from "../components/SegmentList";
 import { SegmentEditor } from "../components/SegmentEditor";
 import { LessonFormModal } from "../components/LessonFormModal";
+import { DifficultyRating } from "../components/DifficultyRating";
+import { FavoriteButton } from "../components/FavoriteButton";
 import {
   FlipIcon,
   FullscreenExitIcon,
@@ -51,6 +53,8 @@ export function PlayerPage() {
   const [pauseCommand, setPauseCommand] = useState(0);
   const hydratedAllSegmentIdsRef = useRef<Set<number>>(new Set());
   const activeStudySessionRef = useRef<ActiveStudySession | null>(null);
+  const difficultySaveSequenceRef = useRef(0);
+  const favoriteSaveSequenceRef = useRef(0);
 
   const loadData = useCallback(async () => {
     if (!lessonId) return;
@@ -100,6 +104,46 @@ export function PlayerPage() {
     setCurrentTime(0);
     hydratedAllSegmentIdsRef.current.clear();
   }, [lessonId]);
+
+  const handleDifficultyChange = useCallback(async (difficulty: number) => {
+    if (!lesson || difficulty === (lesson.difficulty ?? 0)) return;
+    const previousDifficulty = lesson.difficulty ?? 0;
+    const saveSequence = ++difficultySaveSequenceRef.current;
+    setLesson((current) => current ? { ...current, difficulty } : current);
+
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE lessons SET difficulty = $1, updated_at = datetime('now','localtime') WHERE id = $2",
+        [difficulty, lesson.id]
+      );
+    } catch (error) {
+      console.error("Failed to save lesson difficulty", error);
+      if (difficultySaveSequenceRef.current === saveSequence) {
+        setLesson((current) => current ? { ...current, difficulty: previousDifficulty } : current);
+      }
+    }
+  }, [lesson]);
+
+  const handleFavoriteChange = useCallback(async (isFavorite: boolean) => {
+    if (!lesson || isFavorite === Boolean(lesson.is_favorite)) return;
+    const previousFavorite = Boolean(lesson.is_favorite);
+    const saveSequence = ++favoriteSaveSequenceRef.current;
+    setLesson((current) => current ? { ...current, is_favorite: isFavorite } : current);
+
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE lessons SET is_favorite = $1, updated_at = datetime('now','localtime') WHERE id = $2",
+        [isFavorite, lesson.id]
+      );
+    } catch (error) {
+      console.error("Failed to save lesson favorite", error);
+      if (favoriteSaveSequenceRef.current === saveSequence) {
+        setLesson((current) => current ? { ...current, is_favorite: previousFavorite } : current);
+      }
+    }
+  }, [lesson]);
 
   useEffect(() => {
     function onFullscreenChange() {
@@ -410,21 +454,27 @@ export function PlayerPage() {
   return (
     <div className={isFullscreen ? "fullscreen-player" : "page-shell space-y-4 sm:space-y-6"}>
       {!isFullscreen && (
-        <div className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-muted)" }}>
-          <button onClick={() => navigate("/classes")} className="icon-button shrink-0" aria-label="Library">
-            <HomeIcon className="h-4 w-4" />
-          </button>
-          <span className="hidden sm:inline">/</span>
-          <button
-            onClick={() => navigate(`/classes/${lesson.class_id}`)}
-            className="hidden sm:block rounded-xl px-2 py-1 transition-colors hover:bg-[var(--bg-tertiary)] truncate max-w-[120px]"
-          >
-            {classTitle || "Class"}
-          </button>
-          <span className="hidden sm:inline">/</span>
-          <h1 className="truncate text-lg sm:text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
-            {lesson.title}
-          </h1>
+        <div className="flex items-start justify-between gap-3 text-sm" style={{ color: "var(--text-muted)" }}>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <button onClick={() => navigate("/classes")} className="icon-button shrink-0" aria-label="Library">
+              <HomeIcon className="h-4 w-4" />
+            </button>
+            <span className="hidden sm:inline">/</span>
+            <button
+              onClick={() => navigate(`/classes/${lesson.class_id}`)}
+              className="hidden sm:block rounded-xl px-2 py-1 transition-colors hover:bg-[var(--bg-tertiary)] truncate max-w-[120px]"
+            >
+              {classTitle || "Class"}
+            </button>
+            <span className="hidden sm:inline">/</span>
+            <h1 className="truncate text-lg sm:text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
+              {lesson.title}
+            </h1>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <FavoriteButton active={Boolean(lesson.is_favorite)} onChange={handleFavoriteChange} />
+            <DifficultyRating value={lesson.difficulty ?? 0} onChange={handleDifficultyChange} />
+          </div>
         </div>
       )}
 

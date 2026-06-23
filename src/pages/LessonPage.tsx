@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
-import { HomeIcon, PencilIcon, XIcon } from "../components/Icons";
+import { DifficultySortIcon, HeartIcon, HomeIcon, PencilIcon, SearchIcon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
+import { DifficultyStars } from "../components/DifficultyRating";
+import { FavoriteButton } from "../components/FavoriteButton";
 import { LessonFormModal } from "../components/LessonFormModal";
 import { ModalBackdrop } from "../components/ModalBackdrop";
 
@@ -66,8 +68,12 @@ export function LessonPage() {
   const [showClassForm, setShowClassForm] = useState(false);
   const [classTitle, setClassTitle] = useState("");
   const [classDescription, setClassDescription] = useState("");
+  const [sortByDifficulty, setSortByDifficulty] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { viewMode, changeViewMode } = useCardViewMode();
   const [youtubeMetaByLessonId, setYoutubeMetaByLessonId] = useState<Record<number, YoutubeMeta>>({});
+  const favoriteSaveSequenceRef = useRef(new Map<number, number>());
 
   const loadData = useCallback(async () => {
     if (!classId) return;
@@ -186,6 +192,30 @@ export function LessonPage() {
     await loadData();
   }
 
+  async function handleFavoriteChange(id: number, isFavorite: boolean) {
+    const previousFavorite = Boolean(lessons.find((lesson) => lesson.id === id)?.is_favorite);
+    const nextSequence = (favoriteSaveSequenceRef.current.get(id) ?? 0) + 1;
+    favoriteSaveSequenceRef.current.set(id, nextSequence);
+    setLessons((current) => current.map((lesson) => (
+      lesson.id === id ? { ...lesson, is_favorite: isFavorite } : lesson
+    )));
+
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE lessons SET is_favorite = $1, updated_at = datetime('now','localtime') WHERE id = $2",
+        [isFavorite, id]
+      );
+    } catch (error) {
+      console.error("Failed to save lesson favorite", error);
+      if (favoriteSaveSequenceRef.current.get(id) === nextSequence) {
+        setLessons((current) => current.map((lesson) => (
+          lesson.id === id ? { ...lesson, is_favorite: previousFavorite } : lesson
+        )));
+      }
+    }
+  }
+
   async function handleReorder(draggedId: number, targetId: number, placement: "before" | "after") {
     if (draggedId === targetId) return;
     const fromIndex = lessons.findIndex((lesson) => lesson.id === draggedId);
@@ -245,6 +275,24 @@ export function LessonPage() {
   }, [lessons]);
 
   const listClassName = getCardGridClassName(viewMode);
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase();
+  const favoriteFilteredLessons = showFavoritesOnly
+    ? lessons.filter((lesson) => Boolean(lesson.is_favorite))
+    : lessons;
+  const filteredLessons = normalizedSearchQuery
+    ? favoriteFilteredLessons.filter((lesson) => {
+        const youtubeMeta = youtubeMetaByLessonId[lesson.id];
+        return [lesson.title, lesson.notes, youtubeMeta?.title, youtubeMeta?.channelName]
+          .some((value) => value?.toLocaleLowerCase().includes(normalizedSearchQuery));
+      })
+    : favoriteFilteredLessons;
+  const displayedLessons = sortByDifficulty
+    ? [...filteredLessons].sort((a, b) => {
+        const aDifficulty = (a.difficulty ?? 0) > 0 ? a.difficulty : 6;
+        const bDifficulty = (b.difficulty ?? 0) > 0 ? b.difficulty : 6;
+        return aDifficulty - bDifficulty || a.sort_order - b.sort_order || a.id - b.id;
+      })
+    : filteredLessons;
 
   if (!cls) {
     return (
@@ -269,11 +317,48 @@ export function LessonPage() {
         </button>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_minmax(16rem,28rem)_1fr] md:items-center">
         <h2 className="section-title">
           Lessons
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="relative w-full">
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="input-field h-10 pl-9 pr-3"
+            placeholder="레슨, 채널, YouTube 제목, 메모 검색"
+            aria-label="레슨 검색"
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setShowFavoritesOnly((current) => !current)}
+            className={`icon-button h-10 w-10 border ${showFavoritesOnly ? "icon-button-active" : ""}`}
+            style={{
+              borderColor: "var(--border-color)",
+              color: showFavoritesOnly ? "var(--favorite)" : undefined,
+              backgroundColor: showFavoritesOnly ? "var(--favorite-soft)" : "var(--surface-soft)",
+            }}
+            aria-label="즐겨찾기만 보기"
+            aria-pressed={showFavoritesOnly}
+            title={showFavoritesOnly ? "모든 레슨 보기" : "즐겨찾기만 보기"}
+          >
+            <HeartIcon className="h-4 w-4" style={{ fill: showFavoritesOnly ? "currentColor" : "none" }} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortByDifficulty((current) => !current)}
+            className={`icon-button h-10 w-10 border ${sortByDifficulty ? "icon-button-active" : ""}`}
+            style={{ borderColor: "var(--border-color)", backgroundColor: sortByDifficulty ? undefined : "var(--surface-soft)" }}
+            aria-label="난이도별 보기"
+            aria-pressed={sortByDifficulty}
+            title={sortByDifficulty ? "기본 순서로 보기" : "난이도 낮은 순으로 보기"}
+          >
+            <DifficultySortIcon className="h-4 w-4" />
+          </button>
           <CardViewToggle value={viewMode} onChange={changeViewMode} />
           {!showForm && (
             <button
@@ -338,12 +423,12 @@ export function LessonPage() {
       )}
 
       <div className={listClassName}>
-        {lessons.map((lesson) => {
+        {displayedLessons.map((lesson) => {
           const youtubeMeta = youtubeMetaByLessonId[lesson.id];
           const thumbnailUrl = youtubeMeta?.thumbnailUrl ?? getYoutubeThumbnailUrl(lesson.video_url);
           const thumbnailFallbackUrl = getYoutubeThumbnailFallbackUrl(lesson.video_url);
           const noteSummary = lesson.notes?.replace(/\s+/g, " ").trim();
-          const cardClassName = "card group flex min-h-full w-full cursor-pointer flex-col px-3 py-2";
+          const cardClassName = "card lesson-card group flex min-h-full w-full cursor-pointer flex-col px-3 py-2";
           const thumbnailClassName = "h-[72px] w-32";
 
           return (
@@ -352,7 +437,11 @@ export function LessonPage() {
               data-reorder-id={lesson.id}
               data-reorder-scope="lessons"
               onClick={() => navigate(`/lesson/${lesson.id}`)}
-              onPointerDown={(e) => startReorderDrag(lesson.id, e)}
+              onPointerDown={(e) => {
+                if (!sortByDifficulty && !showFavoritesOnly && !normalizedSearchQuery) {
+                  startReorderDrag(lesson.id, e);
+                }
+              }}
               className={`${cardClassName} ${
                 draggingLessonId === lesson.id ? "opacity-50" : ""
               }`}
@@ -368,6 +457,7 @@ export function LessonPage() {
                       alt=""
                       className="h-full w-full object-cover"
                       loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         if (!thumbnailFallbackUrl || e.currentTarget.src === thumbnailFallbackUrl) return;
@@ -381,9 +471,17 @@ export function LessonPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
-                    {lesson.title}
-                  </h3>
+                  <div className="flex items-start gap-2">
+                    <h3 className="min-w-0 flex-1 truncate font-medium" style={{ color: "var(--text-primary)" }}>
+                      {lesson.title}
+                    </h3>
+                    <FavoriteButton
+                      active={Boolean(lesson.is_favorite)}
+                      onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
+                      small
+                    />
+                    <DifficultyStars value={lesson.difficulty ?? 0} />
+                  </div>
                   {lesson.video_type === "youtube" && (
                     <div className="mt-0.5 min-w-0">
                       <p className="line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
@@ -436,6 +534,11 @@ export function LessonPage() {
         {lessons.length === 0 && (
           <p className="col-span-full rounded-3xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
             No lessons yet. Add your first lesson.
+          </p>
+        )}
+        {lessons.length > 0 && displayedLessons.length === 0 && (
+          <p className="col-span-full rounded-3xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
+            {showFavoritesOnly && !normalizedSearchQuery ? "즐겨찾기한 레슨이 없습니다." : "검색 결과가 없습니다."}
           </p>
         )}
       </div>

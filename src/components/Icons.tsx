@@ -268,3 +268,30 @@ export function Grid3Icon(props: IconProps) {
     </IconBase>
   );
 }
+
+export function DifficultySortIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="m8 3 1.5 3 3.5.5-2.5 2.4.6 3.5L8 10.8l-3.1 1.6.6-3.5L3 6.5 6.5 6 8 3Z" />
+      <path d="M16 5v13" />
+      <path d="m13 15 3 3 3-3" />
+    </IconBase>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4" />
+    </IconBase>
+  );
+}
+
+export function HeartIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />
+    </IconBase>
+  );
+}
