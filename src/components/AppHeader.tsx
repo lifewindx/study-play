@@ -14,7 +14,7 @@ export function AppHeader() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
         <NavLink
           to="/classes"
-          className="truncate text-base font-semibold"
+          className="truncate text-xl font-semibold"
           style={{ color: "var(--text-primary)" }}
         >
           StudyPlay

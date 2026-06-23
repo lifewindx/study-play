@@ -4,7 +4,7 @@ import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
-import { DifficultySortIcon, HeartIcon, HomeIcon, PencilIcon, PlayIcon, SearchIcon, XIcon } from "../components/Icons";
+import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { DifficultyStars } from "../components/DifficultyRating";
 import { FavoriteButton } from "../components/FavoriteButton";
@@ -304,17 +304,34 @@ export function LessonPage() {
 
   return (
     <div className="page-shell">
-      <div className="mb-6 flex items-center gap-2 text-sm" style={{ color: "var(--text-muted)" }}>
-        <button onClick={() => navigate("/classes")} className="icon-button" aria-label="Library">
-          <HomeIcon className="h-4 w-4" />
-        </button>
-        <span>/</span>
-        <h1 className="truncate text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          {cls.title}
-        </h1>
-        <button onClick={openClassForm} className="icon-button" aria-label="Edit class">
-          <PencilIcon className="h-4 w-4" />
-        </button>
+      <div className="mb-6 border-b pb-5" style={{ borderColor: "var(--border-color)" }}>
+        <nav className="flex items-center gap-1.5 text-xs" aria-label="Breadcrumb">
+          <button
+            type="button"
+            onClick={() => navigate("/classes")}
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 transition-colors hover:bg-[var(--bg-tertiary)]"
+            style={{ color: "var(--text-secondary)", borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}
+          >
+            <HomeIcon className="h-3.5 w-3.5" />
+            <span>Library</span>
+          </button>
+          <ChevronRightIcon className="h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
+          <span
+            className="rounded-full px-2.5 py-1.5 font-medium"
+            style={{ color: "var(--accent)", backgroundColor: "var(--accent-soft)" }}
+          >
+            Class
+          </span>
+        </nav>
+        <div className="mt-3 flex min-w-0 items-center gap-3">
+          <span className="h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: "var(--accent)" }} />
+          <h1 className="min-w-0 truncate text-3xl font-semibold sm:text-4xl" style={{ color: "var(--text-primary)" }}>
+            {cls.title}
+          </h1>
+          <button onClick={openClassForm} className="icon-button h-8 w-8 shrink-0" aria-label="Edit class" title="Edit class">
+            <PencilIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 grid gap-3 md:grid-cols-[1fr_minmax(16rem,28rem)_1fr] md:items-center">
@@ -363,9 +380,11 @@ export function LessonPage() {
           {!showForm && (
             <button
               onClick={openCreateForm}
-              className="btn-primary"
+              className="btn-primary h-10 w-10 p-0"
+              aria-label="New lesson"
+              title="New lesson"
             >
-              New lesson
+              <PlusIcon className="h-5 w-5" />
             </button>
           )}
         </div>
