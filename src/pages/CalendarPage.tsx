@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Class, StudySession } from "../types";
 import { getDb, getRoutineCompletionCounts } from "../lib/db";
 import { ChevronLeftIcon, ChevronRightIcon } from "../components/Icons";
+import { ModalBackdrop } from "../components/ModalBackdrop";
 
 interface SessionRow extends StudySession {
   lesson_title: string;
@@ -372,8 +373,8 @@ export function CalendarPage() {
       </div>
 
       {selectedDate && (
-        <div className="modal-backdrop" onClick={closeDetail}>
-          <div className="modal-card max-w-md" onClick={(event) => event.stopPropagation()}>
+        <ModalBackdrop onClose={closeDetail}>
+          <div className="modal-card max-w-md">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
                 {selectedDate}
@@ -410,7 +411,7 @@ export function CalendarPage() {
               </div>
             )}
           </div>
-        </div>
+        </ModalBackdrop>
       )}
     </div>
   );

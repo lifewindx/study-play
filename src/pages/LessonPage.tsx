@@ -3,10 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { Grid2Icon, Grid3Icon, HomeIcon, ListIcon, PencilIcon, XIcon } from "../components/Icons";
+import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
+import { HomeIcon, PencilIcon, XIcon } from "../components/Icons";
+import { CardViewToggle } from "../components/CardViewToggle";
 import { LessonFormModal } from "../components/LessonFormModal";
-
-type LessonViewMode = "list" | "grid2" | "grid3";
+import { ModalBackdrop } from "../components/ModalBackdrop";
 
 interface YoutubeMeta {
   title: string | null;
@@ -65,7 +66,7 @@ export function LessonPage() {
   const [showClassForm, setShowClassForm] = useState(false);
   const [classTitle, setClassTitle] = useState("");
   const [classDescription, setClassDescription] = useState("");
-  const [viewMode, setViewMode] = useState<LessonViewMode>("grid2");
+  const { viewMode, changeViewMode } = useCardViewMode();
   const [youtubeMetaByLessonId, setYoutubeMetaByLessonId] = useState<Record<number, YoutubeMeta>>({});
 
   const loadData = useCallback(async () => {
@@ -243,11 +244,7 @@ export function LessonPage() {
     };
   }, [lessons]);
 
-  const listClassName = viewMode === "list"
-    ? "grid gap-3"
-    : viewMode === "grid2"
-      ? "grid gap-4 sm:grid-cols-2"
-      : "grid gap-4 sm:grid-cols-2 xl:grid-cols-3";
+  const listClassName = getCardGridClassName(viewMode);
 
   if (!cls) {
     return (
@@ -277,35 +274,7 @@ export function LessonPage() {
           Lessons
         </h2>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-xl border p-1" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`icon-button h-8 w-8 ${viewMode === "list" ? "icon-button-active" : ""}`}
-              aria-label="List view"
-              title="목록보기"
-            >
-              <ListIcon className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("grid2")}
-              className={`icon-button h-8 w-8 ${viewMode === "grid2" ? "icon-button-active" : ""}`}
-              aria-label="2 column view"
-              title="2컬럼 보기"
-            >
-              <Grid2Icon className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("grid3")}
-              className={`icon-button h-8 w-8 ${viewMode === "grid3" ? "icon-button-active" : ""}`}
-              aria-label="3 column view"
-              title="3컬럼 보기"
-            >
-              <Grid3Icon className="h-4 w-4" />
-            </button>
-          </div>
+          <CardViewToggle value={viewMode} onChange={changeViewMode} />
           {!showForm && (
             <button
               onClick={openCreateForm}
@@ -329,8 +298,8 @@ export function LessonPage() {
       )}
 
       {showClassForm && (
-        <div className="modal-backdrop" onClick={closeClassForm}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <ModalBackdrop onClose={closeClassForm}>
+          <div className="modal-card">
             <div className="mb-4">
               <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
                 Edit class
@@ -365,7 +334,7 @@ export function LessonPage() {
               </button>
             </div>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       <div className={listClassName}>
@@ -388,7 +357,7 @@ export function LessonPage() {
                 draggingLessonId === lesson.id ? "opacity-50" : ""
               }`}
             >
-              <div className="flex w-full flex-1 items-center gap-3">
+              <div className="flex w-full flex-1 items-start gap-3">
                 <div
                   className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-2xl`}
                   style={{ backgroundColor: "var(--bg-tertiary)" }}
@@ -455,7 +424,7 @@ export function LessonPage() {
               {noteSummary && (
                 <p
                   className="mt-2 w-full truncate border-t pt-2 text-xs font-medium"
-                  style={{ color: "var(--violet)", borderColor: "var(--border-color)" }}
+                  style={{ color: "var(--warning)", borderColor: "var(--border-color)" }}
                   title={lesson.notes}
                 >
                   {noteSummary}

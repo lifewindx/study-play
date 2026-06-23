@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ModalBackdrop } from "./ModalBackdrop";
 
 interface LessonFormData {
   title: string;
@@ -41,8 +42,8 @@ export function LessonFormModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+    <ModalBackdrop onClose={onClose}>
+      <div className="modal-card">
         <div className="mb-4">
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
             {mode === "edit" ? "Edit lesson" : "New lesson"}
@@ -87,6 +88,6 @@ export function LessonFormModal({
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }

@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { PencilIcon, TrashIcon } from "../components/Icons";
+import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
+import { CardViewToggle } from "../components/CardViewToggle";
+import { ModalBackdrop } from "../components/ModalBackdrop";
+import { PencilIcon, XIcon } from "../components/Icons";
 
 export function ClassesPage() {
   const navigate = useNavigate();
@@ -13,6 +16,7 @@ export function ClassesPage() {
   const [editingClassId, setEditingClassId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const { viewMode, changeViewMode } = useCardViewMode();
 
   const loadClasses = useCallback(async () => {
     const db = await getDb();
@@ -118,19 +122,22 @@ function closeForm() {
             Practice classes
           </h1>
         </div>
-        {!showForm && (
-          <button
-            onClick={openCreateForm}
-            className="btn-primary"
-          >
-            New class
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <CardViewToggle value={viewMode} onChange={changeViewMode} />
+          {!showForm && (
+            <button
+              onClick={openCreateForm}
+              className="btn-primary"
+            >
+              New class
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && (
-        <div className="modal-backdrop" onClick={closeForm}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <ModalBackdrop onClose={closeForm}>
+          <div className="modal-card">
             <div className="mb-4">
               <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
                 {editingClassId !== null ? "Edit class" : "New class"}
@@ -165,11 +172,11 @@ function closeForm() {
               </button>
             </div>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
-      <div className="grid gap-3">
-        {classes.map((cls, index) => (
+      <div className={getCardGridClassName(viewMode)}>
+        {classes.map((cls) => (
           <div
             key={cls.id}
             data-reorder-id={cls.id}
@@ -182,10 +189,7 @@ function closeForm() {
             style={{ borderLeftColor: "var(--accent)" }}
           >
             <div className="flex-1 min-w-0">
-              <p className="mb-0.5 text-[10px] font-semibold uppercase" style={{ color: "var(--accent)" }}>
-                Class {String(index + 1).padStart(2, "0")}
-              </p>
-              <h3 className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
+              <h3 className="truncate text-lg font-semibold" style={{ color: "var(--class-title)" }}>
                 {cls.title}
               </h3>
               {cls.description && (
@@ -199,24 +203,26 @@ function closeForm() {
                 className="mr-1 rounded-lg px-2 py-1 text-xs font-medium"
                 style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-tertiary)" }}
               >
-                {lessonCountByClassId[cls.id] ?? 0} {(lessonCountByClassId[cls.id] ?? 0) === 1 ? "lesson" : "lessons"}
+                {lessonCountByClassId[cls.id] ?? 0}
               </span>
-              <button
-                data-no-reorder
-                onClick={(e) => openEditForm(cls, e)}
-                className="icon-button"
-                aria-label="Edit class"
-              >
-                <PencilIcon className="h-4 w-4" />
-              </button>
-              <button
-                data-no-reorder
-                onClick={(e) => handleDelete(cls.id, e)}
-                className="icon-button"
-                aria-label="Delete class"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
+              <div className="flex flex-col items-center justify-center">
+                <button
+                  data-no-reorder
+                  onClick={(e) => openEditForm(cls, e)}
+                  className="icon-button h-8 w-8"
+                  aria-label="Edit class"
+                >
+                  <PencilIcon className="h-4 w-4" />
+                </button>
+                <button
+                  data-no-reorder
+                  onClick={(e) => handleDelete(cls.id, e)}
+                  className="icon-button h-8 w-8"
+                  aria-label="Delete class"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}

@@ -18,6 +18,7 @@
     --accent-contrast: #ffffff;
     --accent-soft: rgba(17, 18, 20, 0.08);
     --warning: #b87a15;
+    --class-title: #2563b8;
     --success: #11895b;
     --violet: #6f58d9;
     --violet-soft: rgba(111, 88, 217, 0.12);
@@ -43,6 +44,7 @@
     --accent-contrast: #041014;
     --accent-soft: rgba(32, 184, 240, 0.14);
     --warning: #f0a51c;
+    --class-title: #38bdf8;
     --success: #1bd48c;
     --violet: #7657ff;
     --violet-soft: rgba(118, 87, 255, 0.16);
