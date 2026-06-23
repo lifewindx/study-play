@@ -414,6 +414,18 @@ class SupabaseDB implements StudyDb {
       return { rowsAffected: 1 };
     }
 
+    if (normalized.startsWith("UPDATE lessons SET play_count")) {
+      const { error } = await supabase
+        .from("lessons")
+        .update({
+          play_count: Math.max(0, Number(bindValues[0] ?? 0)),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", Number(bindValues[1]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
     if (normalized.startsWith("UPDATE segments SET sort_order")) {
       const { error } = await supabase
         .from("segments")

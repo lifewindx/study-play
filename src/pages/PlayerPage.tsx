@@ -55,6 +55,7 @@ export function PlayerPage() {
   const activeStudySessionRef = useRef<ActiveStudySession | null>(null);
   const difficultySaveSequenceRef = useRef(0);
   const favoriteSaveSequenceRef = useRef(0);
+  const hasCountedPlayRef = useRef(false);
 
   const loadData = useCallback(async () => {
     if (!lessonId) return;
@@ -103,6 +104,7 @@ export function PlayerPage() {
     setVideoDuration(0);
     setCurrentTime(0);
     hydratedAllSegmentIdsRef.current.clear();
+    hasCountedPlayRef.current = false;
   }, [lessonId]);
 
   const handleDifficultyChange = useCallback(async (difficulty: number) => {
@@ -142,6 +144,26 @@ export function PlayerPage() {
       if (favoriteSaveSequenceRef.current === saveSequence) {
         setLesson((current) => current ? { ...current, is_favorite: previousFavorite } : current);
       }
+    }
+  }, [lesson]);
+
+  const countLessonPlay = useCallback(async () => {
+    if (!lesson || hasCountedPlayRef.current) return;
+    hasCountedPlayRef.current = true;
+    const previousCount = lesson.play_count ?? 0;
+    const nextCount = previousCount + 1;
+    setLesson((current) => current?.id === lesson.id ? { ...current, play_count: nextCount } : current);
+
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE lessons SET play_count = $1, updated_at = datetime('now','localtime') WHERE id = $2",
+        [nextCount, lesson.id]
+      );
+    } catch (error) {
+      console.error("Failed to save lesson play count", error);
+      hasCountedPlayRef.current = false;
+      setLesson((current) => current?.id === lesson.id ? { ...current, play_count: previousCount } : current);
     }
   }, [lesson]);
 
@@ -501,6 +523,7 @@ export function PlayerPage() {
               flipV={flipV}
               onTimeUpdate={handleTimeUpdate}
               onDurationChange={handleDurationChange}
+              onPlaybackStarted={() => void countLessonPlay()}
               onPlaybackPaused={handlePlaybackPaused}
               segmentKey={activeSegment?.id}
               playCommand={playCommand}

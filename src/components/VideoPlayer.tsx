@@ -14,6 +14,7 @@ interface VideoPlayerProps {
   flipV: boolean;
   onTimeUpdate?: (currentTime: number) => void;
   onDurationChange?: (duration: number) => void;
+  onPlaybackStarted?: () => void;
   onPlaybackPaused?: () => void;
   segmentKey?: number;
   playCommand?: number;
@@ -141,6 +142,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   flipV,
   onTimeUpdate,
   onDurationChange,
+  onPlaybackStarted,
   onPlaybackPaused,
   segmentKey,
   playCommand,
@@ -160,6 +162,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const loopGapRef = useRef(loopGap);
   const onTimeUpdateRef = useRef(onTimeUpdate);
   const onDurationChangeRef = useRef(onDurationChange);
+  const onPlaybackStartedRef = useRef(onPlaybackStarted);
   const onPlaybackPausedRef = useRef(onPlaybackPaused);
   const lastKnownTimeRef = useRef(0);
   const lastKnownDurationRef = useRef(0);
@@ -172,6 +175,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   loopGapRef.current = loopGap;
   onTimeUpdateRef.current = onTimeUpdate;
   onDurationChangeRef.current = onDurationChange;
+  onPlaybackStartedRef.current = onPlaybackStarted;
   onPlaybackPausedRef.current = onPlaybackPaused;
 
   const videoId = videoType === "youtube" ? extractYoutubeId(videoUrl) : null;
@@ -336,6 +340,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               if (state === (window.YT?.PlayerState.PLAYING ?? 1)) {
                 emitDuration();
                 startPolling();
+                onPlaybackStartedRef.current?.();
               } else {
                 stopPolling();
                 if (state === (window.YT?.PlayerState.PAUSED ?? 2)) {

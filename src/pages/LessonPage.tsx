@@ -4,7 +4,7 @@ import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
-import { DifficultySortIcon, HeartIcon, HomeIcon, PencilIcon, SearchIcon, XIcon } from "../components/Icons";
+import { DifficultySortIcon, HeartIcon, HomeIcon, PencilIcon, PlayIcon, SearchIcon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { DifficultyStars } from "../components/DifficultyRating";
 import { FavoriteButton } from "../components/FavoriteButton";
@@ -479,7 +479,7 @@ export function LessonPage() {
                   </div>
                   {lesson.video_type === "youtube" && (
                     <div className="mt-0.5 min-w-0">
-                      <p className="truncate text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
+                      <p className="truncate text-[10px] leading-snug" style={{ color: "var(--text-muted)" }}>
                         {youtubeMeta === undefined
                           ? "YouTube title loading..."
                           : youtubeMeta.title ?? "YouTube title unavailable"}
@@ -487,11 +487,15 @@ export function LessonPage() {
                       {youtubeMeta?.channelName && (
                         <p
                           className="mt-1 w-fit max-w-full truncate rounded px-1 py-px text-[7px] font-medium leading-none"
-                          style={{ color: "var(--violet)", backgroundColor: "var(--violet-soft)" }}
+                          style={{ color: "var(--favorite)", backgroundColor: "var(--favorite-soft)" }}
                         >
                           {youtubeMeta.channelName}
                         </p>
                       )}
+                      <div className="mt-1 flex items-center gap-1 text-[9px] leading-none" style={{ color: "var(--text-muted)" }}>
+                        <PlayIcon className="h-2.5 w-2.5" />
+                        <span>{lesson.play_count ?? 0}</span>
+                      </div>
                     </div>
                   )}
                 </div>

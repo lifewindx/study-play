@@ -19,6 +19,7 @@ export interface Lesson {
   notes: string;
   difficulty: number;
   is_favorite: boolean;
+  play_count: number;
   sort_order: number;
   created_at: string;
   updated_at: string;

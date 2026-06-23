@@ -1,10 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
 import { CalendarIcon, UserIcon } from "./Icons";
 
 export function AppHeader() {
-  const { user } = useAuth();
-
   return (
     <header
       className="shrink-0 border-b"
@@ -15,19 +12,12 @@ export function AppHeader() {
       }}
     >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
-        <NavLink to="/classes" className="flex min-w-0 items-center gap-3">
-          <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: "var(--accent)" }}
-          />
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              StudyPlay
-            </div>
-            <div className="truncate text-[11px]" style={{ color: "var(--text-muted)" }}>
-              {user?.email ?? "Loop practice desk"}
-            </div>
-          </div>
+        <NavLink
+          to="/classes"
+          className="truncate text-base font-semibold"
+          style={{ color: "var(--text-primary)" }}
+        >
+          StudyPlay
         </NavLink>
 
         <div className="flex items-center gap-2">
