@@ -15,7 +15,7 @@ export function FavoriteButton({ active, onChange, small = false }: FavoriteButt
         event.stopPropagation();
         onChange(!active);
       }}
-      className={`icon-button shrink-0 ${small ? "h-7 w-7" : "h-10 w-10"}`}
+      className={`icon-button shrink-0 ${small ? "h-6 w-6" : "h-10 w-10"}`}
       style={{
         color: active ? "var(--favorite)" : "var(--text-muted)",
         backgroundColor: active ? "var(--favorite-soft)" : undefined,
@@ -24,7 +24,7 @@ export function FavoriteButton({ active, onChange, small = false }: FavoriteButt
       aria-pressed={active}
       title={active ? "즐겨찾기 해제" : "즐겨찾기 추가"}
     >
-      <HeartIcon className={small ? "h-4 w-4" : "h-5 w-5"} style={{ fill: active ? "currentColor" : "none" }} />
+      <HeartIcon className={small ? "h-3.5 w-3.5" : "h-5 w-5"} style={{ fill: active ? "currentColor" : "none" }} />
     </button>
   );
 }

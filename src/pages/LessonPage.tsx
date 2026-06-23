@@ -475,23 +475,18 @@ export function LessonPage() {
                     <h3 className="min-w-0 flex-1 truncate font-medium" style={{ color: "var(--text-primary)" }}>
                       {lesson.title}
                     </h3>
-                    <FavoriteButton
-                      active={Boolean(lesson.is_favorite)}
-                      onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
-                      small
-                    />
                     <DifficultyStars value={lesson.difficulty ?? 0} />
                   </div>
                   {lesson.video_type === "youtube" && (
                     <div className="mt-0.5 min-w-0">
-                      <p className="line-clamp-2 text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
+                      <p className="truncate text-xs leading-snug" style={{ color: "var(--text-muted)" }}>
                         {youtubeMeta === undefined
                           ? "YouTube title loading..."
                           : youtubeMeta.title ?? "YouTube title unavailable"}
                       </p>
                       {youtubeMeta?.channelName && (
                         <p
-                          className="mt-1 w-fit max-w-full truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-snug"
+                          className="mt-1 w-fit max-w-full truncate rounded px-1 py-px text-[7px] font-medium leading-none"
                           style={{ color: "var(--violet)", backgroundColor: "var(--violet-soft)" }}
                         >
                           {youtubeMeta.channelName}
@@ -500,23 +495,30 @@ export function LessonPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex shrink-0 flex-col items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-                  <button
-                    data-no-reorder
-                    onClick={(e) => openEditForm(lesson, e)}
-                    className="icon-button h-8 w-8"
-                    aria-label="Edit lesson"
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    data-no-reorder
-                    onClick={(e) => handleDelete(lesson.id, e)}
-                    className="icon-button h-8 w-8"
-                    aria-label="Delete lesson"
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </button>
+                <div className="flex shrink-0 flex-col items-center justify-center">
+                  <FavoriteButton
+                    active={Boolean(lesson.is_favorite)}
+                    onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
+                    small
+                  />
+                  <div className="flex flex-col opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                    <button
+                      data-no-reorder
+                      onClick={(e) => openEditForm(lesson, e)}
+                      className="icon-button h-6 w-6"
+                      aria-label="Edit lesson"
+                    >
+                      <PencilIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      data-no-reorder
+                      onClick={(e) => handleDelete(lesson.id, e)}
+                      className="icon-button h-6 w-6"
+                      aria-label="Delete lesson"
+                    >
+                      <XIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
               {noteSummary && (
