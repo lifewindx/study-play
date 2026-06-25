@@ -505,7 +505,7 @@ export function PlayerPage() {
         className={isFullscreen ? "fullscreen-video-container" : "player-panel"}
       >
         <div
-          className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-3xl border"}
+          className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-xl border"}
           style={!isFullscreen ? { borderColor: "var(--border-color)" } : undefined}
         >
           <div className={isFullscreen ? "h-full w-full relative" : "aspect-video"}>
@@ -672,7 +672,7 @@ export function PlayerPage() {
             </div>
 
             {segmentError && (
-              <p className="mb-3 rounded-2xl border px-3 py-2 text-sm" style={{ color: "var(--danger, #ef4444)", borderColor: "var(--danger, #ef4444)" }}>
+              <p className="mb-3 rounded-lg border px-3 py-2 text-sm" style={{ color: "var(--danger, #ef4444)", borderColor: "var(--danger, #ef4444)" }}>
                 {segmentError}
               </p>
             )}

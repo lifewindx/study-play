@@ -58,7 +58,7 @@ export function SegmentEditor({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-3xl border p-4"
+      className="space-y-3 rounded-xl border p-4"
       style={{
         backgroundColor: "var(--bg-secondary)",
         borderColor: "var(--border-color)",

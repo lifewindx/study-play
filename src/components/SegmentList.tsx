@@ -38,7 +38,7 @@ export function SegmentList({
 
   if (segments.length === 0) {
     return (
-      <p className="rounded-3xl border py-8 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
+      <p className="rounded-xl border py-8 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
         No segments. Add a segment to start practicing.
       </p>
     );
@@ -59,7 +59,7 @@ export function SegmentList({
               onPointerDown={(e) => {
                 if (!isEditing) startReorderDrag(seg.id, e);
               }}
-              className={`flex cursor-pointer items-center gap-3 rounded-3xl border p-3 transition-colors ${
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
                 isActive && !isEditing ? "ring-2" : ""
               } ${isEditing ? "rounded-b-none border-b-0" : ""} ${
                 draggingSegmentId === seg.id ? "opacity-50" : ""

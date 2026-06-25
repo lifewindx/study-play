@@ -183,7 +183,7 @@ function closeForm() {
             data-reorder-scope="classes"
             onClick={() => navigate(`/classes/${cls.id}`)}
             onPointerDown={(e) => startReorderDrag(cls.id, e)}
-            className={`card group flex cursor-pointer items-center gap-3 rounded-2xl border-l-[3px] py-3 pl-6 pr-3 ${
+            className={`card group flex cursor-pointer items-center gap-3 rounded-xl border-l-[3px] py-3 pl-6 pr-3 ${
               draggingClassId === cls.id ? "opacity-50" : ""
             }`}
             style={{ borderLeftColor: "var(--accent)" }}
@@ -227,7 +227,7 @@ function closeForm() {
           </div>
         ))}
         {classes.length === 0 && (
-          <p className="col-span-full rounded-3xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
+          <p className="col-span-full rounded-xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
             No classes yet. Create your first class to get started.
           </p>
         )}

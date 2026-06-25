@@ -481,7 +481,7 @@ export function LessonPage() {
               <div className="flex w-full flex-1 items-start gap-3">
                 {showLessonThumbnails && (
                   <div
-                    className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-2xl`}
+                    className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-xl`}
                     style={{ backgroundColor: "var(--bg-tertiary)" }}
                   >
                     {thumbnailUrl ? (
@@ -572,12 +572,12 @@ export function LessonPage() {
           );
         })}
         {lessons.length === 0 && (
-          <p className="col-span-full rounded-3xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
+          <p className="col-span-full rounded-xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
             No lessons yet. Add your first lesson.
           </p>
         )}
         {lessons.length > 0 && displayedLessons.length === 0 && (
-          <p className="col-span-full rounded-3xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
+          <p className="col-span-full rounded-xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
             {showFavoritesOnly && !normalizedSearchQuery ? "즐겨찾기한 레슨이 없습니다." : "검색 결과가 없습니다."}
           </p>
         )}
