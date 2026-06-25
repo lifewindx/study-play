@@ -269,6 +269,17 @@ export function Grid3Icon(props: IconProps) {
   );
 }
 
+export function ImageIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+      <path d="m3 15 4.5-4.5a2 2 0 0 1 2.8 0L15 15" />
+      <path d="m13 13 1.5-1.5a2 2 0 0 1 2.8 0L21 15" />
+      <path d="M15 8h.01" />
+    </IconBase>
+  );
+}
+
 export function DifficultySortIcon(props: IconProps) {
   return (
     <IconBase {...props}>

@@ -4,7 +4,8 @@ import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
-import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, XIcon } from "../components/Icons";
+import { useLessonThumbnailVisibility } from "../hooks/useLessonThumbnailVisibility";
+import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { DifficultyStars } from "../components/DifficultyRating";
 import { FavoriteButton } from "../components/FavoriteButton";
@@ -72,6 +73,7 @@ export function LessonPage() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { viewMode, changeViewMode } = useCardViewMode();
+  const { showLessonThumbnails, toggleShowLessonThumbnails } = useLessonThumbnailVisibility();
   const [youtubeMetaByLessonId, setYoutubeMetaByLessonId] = useState<Record<number, YoutubeMeta>>({});
   const favoriteSaveSequenceRef = useRef(new Map<number, number>());
 
@@ -376,6 +378,17 @@ export function LessonPage() {
           >
             <DifficultySortIcon className="h-4 w-4" />
           </button>
+          <button
+            type="button"
+            onClick={toggleShowLessonThumbnails}
+            className={`icon-button h-10 w-10 border ${showLessonThumbnails ? "icon-button-active" : ""}`}
+            style={{ borderColor: "var(--border-color)", backgroundColor: showLessonThumbnails ? undefined : "var(--surface-soft)" }}
+            aria-label="썸네일 표시"
+            aria-pressed={showLessonThumbnails}
+            title={showLessonThumbnails ? "썸네일 숨기기" : "썸네일 표시"}
+          >
+            <ImageIcon className="h-4 w-4" />
+          </button>
           <CardViewToggle value={viewMode} onChange={changeViewMode} />
           {!showForm && (
             <button
@@ -466,29 +479,31 @@ export function LessonPage() {
               }`}
             >
               <div className="flex w-full flex-1 items-start gap-3">
-                <div
-                  className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-2xl`}
-                  style={{ backgroundColor: "var(--bg-tertiary)" }}
-                >
-                  {thumbnailUrl ? (
-                    <img
-                      src={thumbnailUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        if (!thumbnailFallbackUrl || e.currentTarget.src === thumbnailFallbackUrl) return;
-                        e.currentTarget.src = thumbnailFallbackUrl;
-                      }}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                      Local video
-                    </div>
-                  )}
-                </div>
+                {showLessonThumbnails && (
+                  <div
+                    className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-2xl`}
+                    style={{ backgroundColor: "var(--bg-tertiary)" }}
+                  >
+                    {thumbnailUrl ? (
+                      <img
+                        src={thumbnailUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          if (!thumbnailFallbackUrl || e.currentTarget.src === thumbnailFallbackUrl) return;
+                          e.currentTarget.src = thumbnailFallbackUrl;
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                        Local video
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start gap-2">
                     <h3 className="min-w-0 flex-1 truncate font-medium" style={{ color: "var(--text-primary)" }}>
