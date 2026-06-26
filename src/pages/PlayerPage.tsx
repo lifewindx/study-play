@@ -495,7 +495,7 @@ export function PlayerPage() {
   const newSegmentEndTime = newSegmentStartTime + 10;
 
   return (
-    <div className={isFullscreen ? "fullscreen-player" : "page-shell space-y-4 sm:space-y-6"}>
+    <div className={isFullscreen ? "fullscreen-player" : "page-shell space-y-2 sm:space-y-3"}>
       {!isFullscreen && (
         <div className="flex items-start justify-between gap-3 text-sm" style={{ color: "var(--text-muted)" }}>
           <div className="flex min-w-0 items-center gap-1.5">

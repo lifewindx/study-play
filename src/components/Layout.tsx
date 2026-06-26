@@ -10,7 +10,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell flex h-screen flex-col overflow-hidden">
       {!isLessonPlayerPage && <AppHeader />}
-      <main className="flex-1 overflow-auto px-5 py-6 sm:px-8">
+      <main className={`flex-1 overflow-auto px-5 sm:px-8 ${isLessonPlayerPage ? "py-3" : "py-6"}`}>
         {children}
       </main>
       <RoutinePanel />
