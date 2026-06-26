@@ -4,11 +4,14 @@ export type CardViewMode = "list" | "grid2" | "grid3";
 
 const STORAGE_KEY = "studyplay-card-view-mode";
 const LEGACY_STORAGE_KEY = "studyplay-lesson-view-mode";
+const THUMBNAIL_STORAGE_KEY = "studyplay-show-lesson-thumbnails";
 const CLASS_SETTINGS_STORAGE_PREFIX = "studyplay-class-lesson-view-settings:";
 
 interface ClassLessonViewSettings {
   viewMode: CardViewMode;
   sortByDifficulty: boolean;
+  showFavoritesOnly: boolean;
+  showLessonThumbnails: boolean;
 }
 
 function isCardViewMode(value: string | null): value is CardViewMode {
@@ -25,6 +28,17 @@ function getStoredViewMode(): CardViewMode {
   return "grid2";
 }
 
+function getStoredThumbnailVisibility(): boolean {
+  try {
+    const storedValue = localStorage.getItem(THUMBNAIL_STORAGE_KEY);
+    if (storedValue === "true") return true;
+    if (storedValue === "false") return false;
+  } catch {
+    // Fall back to the default when storage is unavailable.
+  }
+  return true;
+}
+
 function getClassSettingsStorageKey(classId: string): string {
   return `${CLASS_SETTINGS_STORAGE_PREFIX}${classId}`;
 }
@@ -33,6 +47,8 @@ function getStoredClassLessonViewSettings(classId: string | undefined): ClassLes
   const fallback: ClassLessonViewSettings = {
     viewMode: getStoredViewMode(),
     sortByDifficulty: false,
+    showFavoritesOnly: false,
+    showLessonThumbnails: getStoredThumbnailVisibility(),
   };
   if (!classId) return fallback;
 
@@ -44,6 +60,8 @@ function getStoredClassLessonViewSettings(classId: string | undefined): ClassLes
     return {
       viewMode: isCardViewMode(parsedViewMode) ? parsedViewMode : fallback.viewMode,
       sortByDifficulty: typeof parsed.sortByDifficulty === "boolean" ? parsed.sortByDifficulty : fallback.sortByDifficulty,
+      showFavoritesOnly: typeof parsed.showFavoritesOnly === "boolean" ? parsed.showFavoritesOnly : fallback.showFavoritesOnly,
+      showLessonThumbnails: typeof parsed.showLessonThumbnails === "boolean" ? parsed.showLessonThumbnails : fallback.showLessonThumbnails,
     };
   } catch {
     return fallback;
@@ -97,11 +115,31 @@ export function useClassLessonViewSettings(classId: string | undefined) {
     });
   }, [classId]);
 
+  const changeShowFavoritesOnly = useCallback((showFavoritesOnly: boolean) => {
+    setSettings((current) => {
+      const next = { ...current, showFavoritesOnly };
+      saveClassLessonViewSettings(classId, next);
+      return next;
+    });
+  }, [classId]);
+
+  const toggleShowLessonThumbnails = useCallback(() => {
+    setSettings((current) => {
+      const next = { ...current, showLessonThumbnails: !current.showLessonThumbnails };
+      saveClassLessonViewSettings(classId, next);
+      return next;
+    });
+  }, [classId]);
+
   return {
     viewMode: settings.viewMode,
     sortByDifficulty: settings.sortByDifficulty,
+    showFavoritesOnly: settings.showFavoritesOnly,
+    showLessonThumbnails: settings.showLessonThumbnails,
     changeViewMode,
     changeSortByDifficulty,
+    changeShowFavoritesOnly,
+    toggleShowLessonThumbnails,
   };
 }
 

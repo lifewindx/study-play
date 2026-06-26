@@ -4,7 +4,6 @@ import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useClassLessonViewSettings } from "../hooks/useCardViewMode";
-import { useLessonThumbnailVisibility } from "../hooks/useLessonThumbnailVisibility";
 import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { DifficultyStars } from "../components/DifficultyRating";
@@ -69,10 +68,17 @@ export function LessonPage() {
   const [showClassForm, setShowClassForm] = useState(false);
   const [classTitle, setClassTitle] = useState("");
   const [classDescription, setClassDescription] = useState("");
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { viewMode, sortByDifficulty, changeViewMode, changeSortByDifficulty } = useClassLessonViewSettings(classId);
-  const { showLessonThumbnails, toggleShowLessonThumbnails } = useLessonThumbnailVisibility();
+  const {
+    viewMode,
+    sortByDifficulty,
+    showFavoritesOnly,
+    showLessonThumbnails,
+    changeViewMode,
+    changeSortByDifficulty,
+    changeShowFavoritesOnly,
+    toggleShowLessonThumbnails,
+  } = useClassLessonViewSettings(classId);
   const [youtubeMetaByLessonId, setYoutubeMetaByLessonId] = useState<Record<number, YoutubeMeta>>({});
   const favoriteSaveSequenceRef = useRef(new Map<number, number>());
 
@@ -353,7 +359,7 @@ export function LessonPage() {
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
-            onClick={() => setShowFavoritesOnly((current) => !current)}
+            onClick={() => changeShowFavoritesOnly(!showFavoritesOnly)}
             className={`icon-button h-10 w-10 ${showFavoritesOnly ? "icon-button-active" : ""}`}
             style={{
               color: showFavoritesOnly ? "var(--favorite)" : undefined,
