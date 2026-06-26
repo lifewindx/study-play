@@ -516,11 +516,16 @@ export function LessonPage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-center gap-2">
                     <h3 className="min-w-0 flex-1 truncate font-medium" style={{ color: "var(--text-primary)" }}>
                       {lesson.title}
                     </h3>
                     <DifficultyStars value={lesson.difficulty ?? 0} />
+                    <FavoriteButton
+                      active={Boolean(lesson.is_favorite)}
+                      onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
+                      small
+                    />
                   </div>
                   {lesson.video_type === "youtube" && (
                     <div className="mt-0.5 min-w-0">
@@ -529,14 +534,6 @@ export function LessonPage() {
                           ? "YouTube title loading..."
                           : youtubeMeta.title ?? "YouTube title unavailable"}
                       </p>
-                      {youtubeMeta?.channelName && (
-                        <p
-                          className="mt-1 w-fit max-w-full truncate rounded px-1 py-px text-[7px] font-medium leading-none"
-                          style={{ color: "var(--favorite)", backgroundColor: "var(--favorite-soft)" }}
-                        >
-                          {youtubeMeta.channelName}
-                        </p>
-                      )}
                       <div className="mt-1 flex items-center gap-1 text-[9px] leading-none" style={{ color: "var(--text-muted)" }}>
                         <PlayIcon className="h-2.5 w-2.5" />
                         <span>{lesson.play_count ?? 0}</span>
@@ -545,11 +542,6 @@ export function LessonPage() {
                   )}
                 </div>
                 <div className="flex shrink-0 flex-col items-center justify-center">
-                  <FavoriteButton
-                    active={Boolean(lesson.is_favorite)}
-                    onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
-                    small
-                  />
                   <div className="flex flex-col opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                     <button
                       data-no-reorder
