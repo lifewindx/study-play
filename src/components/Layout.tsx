@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { AppHeader } from "./AppHeader";
 import { RoutinePanel } from "./RoutinePanel";
 
 export function Layout({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const isLessonPlayerPage = location.pathname.startsWith("/lesson/");
+
   return (
     <div className="app-shell flex h-screen flex-col overflow-hidden">
-      <AppHeader />
+      {!isLessonPlayerPage && <AppHeader />}
       <main className="flex-1 overflow-auto px-5 py-6 sm:px-8">
         {children}
       </main>
