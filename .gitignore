@@ -1,6 +1,5 @@
 node_modules/
 dist/
-src-tauri/
 .DS_Store
 *.log
 graphify-out/
