@@ -1,9 +1,15 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type CardViewMode = "list" | "grid2" | "grid3";
 
 const STORAGE_KEY = "studyplay-card-view-mode";
 const LEGACY_STORAGE_KEY = "studyplay-lesson-view-mode";
+const CLASS_SETTINGS_STORAGE_PREFIX = "studyplay-class-lesson-view-settings:";
+
+interface ClassLessonViewSettings {
+  viewMode: CardViewMode;
+  sortByDifficulty: boolean;
+}
 
 function isCardViewMode(value: string | null): value is CardViewMode {
   return value === "list" || value === "grid2" || value === "grid3";
@@ -19,6 +25,40 @@ function getStoredViewMode(): CardViewMode {
   return "grid2";
 }
 
+function getClassSettingsStorageKey(classId: string): string {
+  return `${CLASS_SETTINGS_STORAGE_PREFIX}${classId}`;
+}
+
+function getStoredClassLessonViewSettings(classId: string | undefined): ClassLessonViewSettings {
+  const fallback: ClassLessonViewSettings = {
+    viewMode: getStoredViewMode(),
+    sortByDifficulty: false,
+  };
+  if (!classId) return fallback;
+
+  try {
+    const storedSettings = localStorage.getItem(getClassSettingsStorageKey(classId));
+    if (!storedSettings) return fallback;
+    const parsed = JSON.parse(storedSettings) as Partial<ClassLessonViewSettings>;
+    const parsedViewMode = parsed.viewMode ?? null;
+    return {
+      viewMode: isCardViewMode(parsedViewMode) ? parsedViewMode : fallback.viewMode,
+      sortByDifficulty: typeof parsed.sortByDifficulty === "boolean" ? parsed.sortByDifficulty : fallback.sortByDifficulty,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveClassLessonViewSettings(classId: string | undefined, settings: ClassLessonViewSettings) {
+  if (!classId) return;
+  try {
+    localStorage.setItem(getClassSettingsStorageKey(classId), JSON.stringify(settings));
+  } catch {
+    // Keep the current-session setting when storage is unavailable.
+  }
+}
+
 export function useCardViewMode() {
   const [viewMode, setViewMode] = useState<CardViewMode>(getStoredViewMode);
 
@@ -32,6 +72,37 @@ export function useCardViewMode() {
   }, []);
 
   return { viewMode, changeViewMode };
+}
+
+export function useClassLessonViewSettings(classId: string | undefined) {
+  const [settings, setSettings] = useState<ClassLessonViewSettings>(() => getStoredClassLessonViewSettings(classId));
+
+  useEffect(() => {
+    setSettings(getStoredClassLessonViewSettings(classId));
+  }, [classId]);
+
+  const changeViewMode = useCallback((viewMode: CardViewMode) => {
+    setSettings((current) => {
+      const next = { ...current, viewMode };
+      saveClassLessonViewSettings(classId, next);
+      return next;
+    });
+  }, [classId]);
+
+  const changeSortByDifficulty = useCallback((sortByDifficulty: boolean) => {
+    setSettings((current) => {
+      const next = { ...current, sortByDifficulty };
+      saveClassLessonViewSettings(classId, next);
+      return next;
+    });
+  }, [classId]);
+
+  return {
+    viewMode: settings.viewMode,
+    sortByDifficulty: settings.sortByDifficulty,
+    changeViewMode,
+    changeSortByDifficulty,
+  };
 }
 
 export function getCardGridClassName(viewMode: CardViewMode): string {

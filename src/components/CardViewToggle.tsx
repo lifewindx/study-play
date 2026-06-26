@@ -7,35 +7,21 @@ interface CardViewToggleProps {
 }
 
 export function CardViewToggle({ value, onChange }: CardViewToggleProps) {
+  const CurrentIcon = value === "list" ? ListIcon : value === "grid2" ? Grid2Icon : Grid3Icon;
+
   return (
-    <div className="flex rounded-xl border p-1" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}>
-      <button
-        type="button"
-        onClick={() => onChange("list")}
-        className={`icon-button h-8 w-8 ${value === "list" ? "icon-button-active" : ""}`}
-        aria-label="List view"
-        title="목록보기"
+    <label className="toolbar-select" title="보기 방식">
+      <CurrentIcon className="h-4 w-4 shrink-0" />
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as CardViewMode)}
+        className="toolbar-select-control"
+        aria-label="보기 방식"
       >
-        <ListIcon className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("grid2")}
-        className={`icon-button h-8 w-8 ${value === "grid2" ? "icon-button-active" : ""}`}
-        aria-label="2 column view"
-        title="2컬럼 보기"
-      >
-        <Grid2Icon className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("grid3")}
-        className={`icon-button h-8 w-8 ${value === "grid3" ? "icon-button-active" : ""}`}
-        aria-label="3 column view"
-        title="3컬럼 보기"
-      >
-        <Grid3Icon className="h-4 w-4" />
-      </button>
-    </div>
+        <option value="list">목록</option>
+        <option value="grid2">2컬럼</option>
+        <option value="grid3">3컬럼</option>
+      </select>
+    </label>
   );
 }

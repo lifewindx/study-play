@@ -110,7 +110,7 @@
 
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-xl transition-all duration-150;
-    border: 1px solid transparent;
+    border: 0;
   }
   .btn-primary {
     @apply btn;
@@ -125,7 +125,6 @@
     @apply btn;
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
-    border-color: var(--border-color);
   }
   .btn-ghost:hover {
     background-color: var(--surface-strong);
@@ -193,9 +192,8 @@
   }
 
   .icon-button {
-    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors;
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors;
     background-color: transparent;
-    border-color: transparent;
     color: var(--text-secondary);
   }
 
@@ -213,6 +211,32 @@
   .icon-button-active:hover {
     background-color: var(--nav-active-bg);
     color: var(--nav-active-text);
+  }
+
+  .toolbar-select {
+    @apply inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors;
+    min-width: 6.75rem;
+    background-color: var(--surface-soft);
+    color: var(--text-secondary);
+  }
+
+  .toolbar-select:focus-within {
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+
+  .toolbar-select:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .toolbar-select-control {
+    @apply min-w-0 flex-1 cursor-pointer appearance-none bg-transparent text-sm outline-none;
+    color: inherit;
+  }
+
+  .toolbar-select-control option {
+    background-color: var(--surface-strong);
+    color: var(--text-primary);
   }
 
   .reorder-preview {
@@ -292,9 +316,8 @@
   }
 
   .control-group {
-    @apply flex flex-wrap items-center gap-2 rounded-lg border p-2;
+    @apply flex flex-wrap items-center gap-2 rounded-lg p-2;
     background-color: var(--bg-primary);
-    border-color: var(--border-color);
   }
 
   .control-chip {

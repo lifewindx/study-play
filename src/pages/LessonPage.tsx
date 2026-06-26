@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
+import { getCardGridClassName, useClassLessonViewSettings } from "../hooks/useCardViewMode";
 import { useLessonThumbnailVisibility } from "../hooks/useLessonThumbnailVisibility";
 import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
@@ -69,10 +69,9 @@ export function LessonPage() {
   const [showClassForm, setShowClassForm] = useState(false);
   const [classTitle, setClassTitle] = useState("");
   const [classDescription, setClassDescription] = useState("");
-  const [sortByDifficulty, setSortByDifficulty] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { viewMode, changeViewMode } = useCardViewMode();
+  const { viewMode, sortByDifficulty, changeViewMode, changeSortByDifficulty } = useClassLessonViewSettings(classId);
   const { showLessonThumbnails, toggleShowLessonThumbnails } = useLessonThumbnailVisibility();
   const [youtubeMetaByLessonId, setYoutubeMetaByLessonId] = useState<Record<number, YoutubeMeta>>({});
   const favoriteSaveSequenceRef = useRef(new Map<number, number>());
@@ -311,8 +310,8 @@ export function LessonPage() {
           <button
             type="button"
             onClick={() => navigate("/classes")}
-            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 transition-colors hover:bg-[var(--bg-tertiary)]"
-            style={{ color: "var(--text-secondary)", borderColor: "var(--border-color)", backgroundColor: "var(--surface-soft)" }}
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[var(--bg-tertiary)]"
+            style={{ color: "var(--text-secondary)", backgroundColor: "var(--surface-soft)" }}
           >
             <HomeIcon className="h-3.5 w-3.5" />
             <span>Library</span>
@@ -355,9 +354,8 @@ export function LessonPage() {
           <button
             type="button"
             onClick={() => setShowFavoritesOnly((current) => !current)}
-            className={`icon-button h-10 w-10 border ${showFavoritesOnly ? "icon-button-active" : ""}`}
+            className={`icon-button h-10 w-10 ${showFavoritesOnly ? "icon-button-active" : ""}`}
             style={{
-              borderColor: "var(--border-color)",
               color: showFavoritesOnly ? "var(--favorite)" : undefined,
               backgroundColor: showFavoritesOnly ? "var(--favorite-soft)" : "var(--surface-soft)",
             }}
@@ -367,22 +365,23 @@ export function LessonPage() {
           >
             <HeartIcon className="h-4 w-4" style={{ fill: showFavoritesOnly ? "currentColor" : "none" }} />
           </button>
-          <button
-            type="button"
-            onClick={() => setSortByDifficulty((current) => !current)}
-            className={`icon-button h-10 w-10 border ${sortByDifficulty ? "icon-button-active" : ""}`}
-            style={{ borderColor: "var(--border-color)", backgroundColor: sortByDifficulty ? undefined : "var(--surface-soft)" }}
-            aria-label="난이도별 보기"
-            aria-pressed={sortByDifficulty}
-            title={sortByDifficulty ? "기본 순서로 보기" : "난이도 낮은 순으로 보기"}
-          >
+          <label className="toolbar-select" title="정렬 방식">
             <DifficultySortIcon className="h-4 w-4" />
-          </button>
+            <select
+              value={sortByDifficulty ? "difficulty" : "default"}
+              onChange={(event) => changeSortByDifficulty(event.target.value === "difficulty")}
+              className="toolbar-select-control"
+              aria-label="정렬 방식"
+            >
+              <option value="default">기본</option>
+              <option value="difficulty">난이도</option>
+            </select>
+          </label>
           <button
             type="button"
             onClick={toggleShowLessonThumbnails}
-            className={`icon-button h-10 w-10 border ${showLessonThumbnails ? "icon-button-active" : ""}`}
-            style={{ borderColor: "var(--border-color)", backgroundColor: showLessonThumbnails ? undefined : "var(--surface-soft)" }}
+            className={`icon-button h-10 w-10 ${showLessonThumbnails ? "icon-button-active" : ""}`}
+            style={{ backgroundColor: showLessonThumbnails ? undefined : "var(--surface-soft)" }}
             aria-label="썸네일 표시"
             aria-pressed={showLessonThumbnails}
             title={showLessonThumbnails ? "썸네일 숨기기" : "썸네일 표시"}
