@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type CardViewMode = "list" | "grid2" | "grid3";
+export type DifficultyFilter = "all" | 1 | 2 | 3 | 4 | 5;
 
 const STORAGE_KEY = "studyplay-card-view-mode";
 const LEGACY_STORAGE_KEY = "studyplay-lesson-view-mode";
@@ -9,9 +10,14 @@ const CLASS_SETTINGS_STORAGE_PREFIX = "studyplay-class-lesson-view-settings:";
 
 interface ClassLessonViewSettings {
   viewMode: CardViewMode;
-  sortByDifficulty: boolean;
+  difficultyFilter: DifficultyFilter;
   showFavoritesOnly: boolean;
   showLessonThumbnails: boolean;
+}
+
+function isDifficultyFilter(value: unknown): value is DifficultyFilter {
+  if (value === "all") return true;
+  return typeof value === "number" && value >= 1 && value <= 5 && Number.isInteger(value);
 }
 
 function isCardViewMode(value: string | null): value is CardViewMode {
@@ -46,7 +52,7 @@ function getClassSettingsStorageKey(classId: string): string {
 function getStoredClassLessonViewSettings(classId: string | undefined): ClassLessonViewSettings {
   const fallback: ClassLessonViewSettings = {
     viewMode: getStoredViewMode(),
-    sortByDifficulty: false,
+    difficultyFilter: "all",
     showFavoritesOnly: false,
     showLessonThumbnails: getStoredThumbnailVisibility(),
   };
@@ -59,7 +65,7 @@ function getStoredClassLessonViewSettings(classId: string | undefined): ClassLes
     const parsedViewMode = parsed.viewMode ?? null;
     return {
       viewMode: isCardViewMode(parsedViewMode) ? parsedViewMode : fallback.viewMode,
-      sortByDifficulty: typeof parsed.sortByDifficulty === "boolean" ? parsed.sortByDifficulty : fallback.sortByDifficulty,
+      difficultyFilter: isDifficultyFilter(parsed.difficultyFilter) ? parsed.difficultyFilter : fallback.difficultyFilter,
       showFavoritesOnly: typeof parsed.showFavoritesOnly === "boolean" ? parsed.showFavoritesOnly : fallback.showFavoritesOnly,
       showLessonThumbnails: typeof parsed.showLessonThumbnails === "boolean" ? parsed.showLessonThumbnails : fallback.showLessonThumbnails,
     };
@@ -107,9 +113,9 @@ export function useClassLessonViewSettings(classId: string | undefined) {
     });
   }, [classId]);
 
-  const changeSortByDifficulty = useCallback((sortByDifficulty: boolean) => {
+  const changeDifficultyFilter = useCallback((difficultyFilter: DifficultyFilter) => {
     setSettings((current) => {
-      const next = { ...current, sortByDifficulty };
+      const next = { ...current, difficultyFilter };
       saveClassLessonViewSettings(classId, next);
       return next;
     });
@@ -133,11 +139,11 @@ export function useClassLessonViewSettings(classId: string | undefined) {
 
   return {
     viewMode: settings.viewMode,
-    sortByDifficulty: settings.sortByDifficulty,
+    difficultyFilter: settings.difficultyFilter,
     showFavoritesOnly: settings.showFavoritesOnly,
     showLessonThumbnails: settings.showLessonThumbnails,
     changeViewMode,
-    changeSortByDifficulty,
+    changeDifficultyFilter,
     changeShowFavoritesOnly,
     toggleShowLessonThumbnails,
   };

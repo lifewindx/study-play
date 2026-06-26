@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { getCardGridClassName, useClassLessonViewSettings } from "../hooks/useCardViewMode";
+import { getCardGridClassName, useClassLessonViewSettings, type DifficultyFilter } from "../hooks/useCardViewMode";
 import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { DifficultyStars } from "../components/DifficultyRating";
@@ -71,11 +71,11 @@ export function LessonPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const {
     viewMode,
-    sortByDifficulty,
+    difficultyFilter,
     showFavoritesOnly,
     showLessonThumbnails,
     changeViewMode,
-    changeSortByDifficulty,
+    changeDifficultyFilter,
     changeShowFavoritesOnly,
     toggleShowLessonThumbnails,
   } = useClassLessonViewSettings(classId);
@@ -286,20 +286,17 @@ export function LessonPage() {
   const favoriteFilteredLessons = showFavoritesOnly
     ? lessons.filter((lesson) => Boolean(lesson.is_favorite))
     : lessons;
+  const difficultyFilteredLessons = difficultyFilter === "all"
+    ? favoriteFilteredLessons
+    : favoriteFilteredLessons.filter((lesson) => (lesson.difficulty ?? 0) === difficultyFilter);
   const filteredLessons = normalizedSearchQuery
-    ? favoriteFilteredLessons.filter((lesson) => {
+    ? difficultyFilteredLessons.filter((lesson) => {
         const youtubeMeta = youtubeMetaByLessonId[lesson.id];
         return [lesson.title, lesson.notes, youtubeMeta?.title, youtubeMeta?.channelName]
           .some((value) => value?.toLocaleLowerCase().includes(normalizedSearchQuery));
       })
-    : favoriteFilteredLessons;
-  const displayedLessons = sortByDifficulty
-    ? [...filteredLessons].sort((a, b) => {
-        const aDifficulty = (a.difficulty ?? 0) > 0 ? a.difficulty : 6;
-        const bDifficulty = (b.difficulty ?? 0) > 0 ? b.difficulty : 6;
-        return aDifficulty - bDifficulty || a.sort_order - b.sort_order || a.id - b.id;
-      })
-    : filteredLessons;
+    : difficultyFilteredLessons;
+  const displayedLessons = filteredLessons;
 
   if (!cls) {
     return (
@@ -371,23 +368,34 @@ export function LessonPage() {
           >
             <HeartIcon className="h-4 w-4" style={{ fill: showFavoritesOnly ? "currentColor" : "none" }} />
           </button>
-          <label className="toolbar-select" title="정렬 방식">
-            <DifficultySortIcon className="h-4 w-4" />
+          <label className="toolbar-select" title="난이도 필터">
+            <DifficultySortIcon className="h-4 w-4" style={{ color: difficultyFilter !== "all" ? "var(--warning)" : undefined }} />
             <select
-              value={sortByDifficulty ? "difficulty" : "default"}
-              onChange={(event) => changeSortByDifficulty(event.target.value === "difficulty")}
+              value={difficultyFilter === "all" ? "all" : String(difficultyFilter)}
+              onChange={(event) => {
+                const v = event.target.value;
+                const next: DifficultyFilter = v === "all" ? "all" : (Number(v) as 1 | 2 | 3 | 4 | 5);
+                changeDifficultyFilter(next);
+              }}
               className="toolbar-select-control"
-              aria-label="정렬 방식"
+              aria-label="난이도 필터"
             >
-              <option value="default">기본</option>
-              <option value="difficulty">난이도</option>
+              <option value="all">전체</option>
+              <option value="1">★</option>
+              <option value="2">★★</option>
+              <option value="3">★★★</option>
+              <option value="4">★★★★</option>
+              <option value="5">★★★★★</option>
             </select>
           </label>
           <button
             type="button"
             onClick={toggleShowLessonThumbnails}
-            className={`icon-button h-10 w-10 ${showLessonThumbnails ? "icon-button-active" : ""}`}
-            style={{ backgroundColor: showLessonThumbnails ? undefined : "var(--surface-soft)" }}
+            className="icon-button h-10 w-10"
+            style={{
+              color: showLessonThumbnails ? "var(--accent)" : undefined,
+              backgroundColor: showLessonThumbnails ? "var(--accent-soft)" : "var(--surface-soft)",
+            }}
             aria-label="썸네일 표시"
             aria-pressed={showLessonThumbnails}
             title={showLessonThumbnails ? "썸네일 숨기기" : "썸네일 표시"}
@@ -475,7 +483,7 @@ export function LessonPage() {
               data-reorder-scope="lessons"
               onClick={() => navigate(`/lesson/${lesson.id}`)}
               onPointerDown={(e) => {
-                if (!sortByDifficulty && !showFavoritesOnly && !normalizedSearchQuery) {
+                if (difficultyFilter === "all" && !showFavoritesOnly && !normalizedSearchQuery) {
                   startReorderDrag(lesson.id, e);
                 }
               }}
@@ -583,7 +591,11 @@ export function LessonPage() {
         )}
         {lessons.length > 0 && displayedLessons.length === 0 && (
           <p className="col-span-full rounded-xl border py-12 text-center text-sm" style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}>
-            {showFavoritesOnly && !normalizedSearchQuery ? "즐겨찾기한 레슨이 없습니다." : "검색 결과가 없습니다."}
+            {difficultyFilter !== "all" && !normalizedSearchQuery
+              ? "해당 난이도의 레슨이 없습니다."
+              : showFavoritesOnly && !normalizedSearchQuery
+                ? "즐겨찾기한 레슨이 없습니다."
+                : "검색 결과가 없습니다."}
           </p>
         )}
       </div>
