@@ -76,24 +76,17 @@ export function PlayerPage() {
       );
       setClassTitle(classRow?.title ?? "");
     }
+    try {
+      await ensureAllSegmentsForLessons([Number(lessonId)]);
+    } catch (error) {
+      console.error("Failed to ensure default All segment", error);
+    }
+
     const segmentRows = await db.select<Segment[]>(
       "SELECT * FROM segments WHERE lesson_id = $1 ORDER BY sort_order, id",
       [Number(lessonId)]
     );
     setSegments(segmentRows);
-
-    try {
-      const insertedCount = await ensureAllSegmentsForLessons([Number(lessonId)]);
-      if (insertedCount > 0) {
-        const refreshedSegmentRows = await db.select<Segment[]>(
-          "SELECT * FROM segments WHERE lesson_id = $1 ORDER BY sort_order, id",
-          [Number(lessonId)]
-        );
-        setSegments(refreshedSegmentRows);
-      }
-    } catch (error) {
-      console.error("Failed to ensure default All segment", error);
-    }
   }, [lessonId]);
 
   useEffect(() => {
@@ -101,11 +94,29 @@ export function PlayerPage() {
   }, [loadData]);
 
   useEffect(() => {
+    setActiveSegment(null);
+    setIsPlaying(false);
     setVideoDuration(0);
     setCurrentTime(0);
     hydratedAllSegmentIdsRef.current.clear();
     hasCountedPlayRef.current = false;
+    setPauseCommand((value) => value + 1);
   }, [lessonId]);
+
+  useEffect(() => {
+    if (segments.length === 0) {
+      setActiveSegment(null);
+      return;
+    }
+
+    setActiveSegment((currentSegment) => {
+      if (currentSegment) {
+        const refreshedSegment = segments.find((segment) => segment.id === currentSegment.id);
+        if (refreshedSegment) return refreshedSegment;
+      }
+      return segments.find(isAllPlaceholderSegment) ?? segments[0];
+    });
+  }, [segments]);
 
   const handleDifficultyChange = useCallback(async (difficulty: number) => {
     if (!lesson || difficulty === (lesson.difficulty ?? 0)) return;
@@ -269,6 +280,11 @@ export function PlayerPage() {
     try {
       const db = await getDb();
       if (editingSegmentId !== null) {
+        const editingSegment = segments.find((segment) => segment.id === editingSegmentId);
+        if (editingSegment && isAllPlaceholderSegment(editingSegment)) {
+          setSegmentError("The default All segment cannot be edited.");
+          return;
+        }
         await db.execute(
           `UPDATE segments SET label = $1, start_time = $2, end_time = $3, loop_gap = $4,
            updated_at = datetime('now','localtime') WHERE id = $5`,
@@ -297,6 +313,11 @@ export function PlayerPage() {
   }
 
   async function handleDeleteSegment(id: number) {
+    const segment = segments.find((item) => item.id === id);
+    if (segment && isAllPlaceholderSegment(segment)) {
+      setSegmentError("The default All segment cannot be deleted.");
+      return;
+    }
     if (!window.confirm("Delete this segment?")) return;
     const db = await getDb();
     await db.execute("DELETE FROM segments WHERE id = $1", [id]);

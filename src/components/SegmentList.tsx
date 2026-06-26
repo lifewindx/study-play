@@ -49,6 +49,7 @@ export function SegmentList({
       {segments.map((seg, idx) => {
         const isActive = seg.id === activeSegmentId;
         const isEditing = seg.id === editingSegmentId;
+        const isDefaultAllSegment = seg.label === "All" && seg.start_time === 0;
 
         return (
           <div key={seg.id}>
@@ -77,7 +78,7 @@ export function SegmentList({
                       color: isActive ? "var(--accent)" : "var(--text-secondary)",
                     }}
                   >
-                    Segment {idx + 1}
+                    {isDefaultAllSegment ? "Default" : `Segment ${idx + 1}`}
                   </span>
                   {seg.label && (
                     <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
@@ -92,16 +93,18 @@ export function SegmentList({
               </div>
 
               <div className="flex shrink-0 gap-1">
-                <button
-                  data-no-reorder
-                  onClick={(e) => { e.stopPropagation(); onEdit(seg); }}
-                  className="icon-button"
-                  style={{ color: isEditing ? "var(--accent)" : "var(--text-secondary)" }}
-                  aria-label={isEditing ? "Close segment editor" : "Edit segment"}
-                >
-                  <PencilIcon className="h-4 w-4" />
-                </button>
-                {!isEditing && (
+                {!isDefaultAllSegment && (
+                  <button
+                    data-no-reorder
+                    onClick={(e) => { e.stopPropagation(); onEdit(seg); }}
+                    className="icon-button"
+                    style={{ color: isEditing ? "var(--accent)" : "var(--text-secondary)" }}
+                    aria-label={isEditing ? "Close segment editor" : "Edit segment"}
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                  </button>
+                )}
+                {!isEditing && !isDefaultAllSegment && (
                   <button
                     data-no-reorder
                     onClick={(e) => { e.stopPropagation(); onDelete(seg.id); }}
