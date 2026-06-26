@@ -309,51 +309,49 @@ export function LessonPage() {
   return (
     <div className="page-shell">
       <div className="mb-6 border-b pb-5" style={{ borderColor: "var(--border-color)" }}>
-        <nav className="flex items-center gap-1.5 text-xs" aria-label="Breadcrumb">
+        <nav className="flex min-w-0 items-center gap-1.5 gap-y-1 text-sm flex-wrap" aria-label="Breadcrumb">
           <button
             type="button"
             onClick={() => navigate("/classes")}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[var(--bg-tertiary)]"
-            style={{ color: "var(--text-secondary)", backgroundColor: "var(--surface-soft)" }}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors hover:bg-[var(--bg-tertiary)]"
+            style={{ color: "var(--text-secondary)" }}
+            aria-label="Library"
           >
             <HomeIcon className="h-3.5 w-3.5" />
-            <span>Library</span>
+            <span className="hidden sm:inline">Library</span>
           </button>
-          <ChevronRightIcon className="h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
-          <span
-            className="rounded-full px-2.5 py-1.5 font-medium"
-            style={{ color: "var(--accent)", backgroundColor: "var(--accent-soft)" }}
+          <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+          <h1
+            className="min-w-0 truncate text-2xl font-semibold sm:text-3xl"
+            style={{ color: "var(--text-primary)" }}
+            title={cls.title}
           >
-            Class
-          </span>
-        </nav>
-        <div className="mt-3 flex min-w-0 items-center gap-3">
-          <span className="h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: "var(--accent)" }} />
-          <h1 className="min-w-0 truncate text-3xl font-semibold sm:text-4xl" style={{ color: "var(--text-primary)" }}>
             {cls.title}
           </h1>
-          <button onClick={openClassForm} className="icon-button h-8 w-8 shrink-0" aria-label="Edit class" title="Edit class">
+          <button
+            onClick={openClassForm}
+            className="icon-button h-8 w-8 shrink-0"
+            aria-label="Edit class"
+            title="Edit class"
+          >
             <PencilIcon className="h-3.5 w-3.5" />
           </button>
-        </div>
+        </nav>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_minmax(16rem,28rem)_1fr] md:items-center">
-        <h2 className="section-title">
-          Lessons
-        </h2>
-        <div className="relative w-full">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="relative w-full sm:w-3/5">
           <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="input-field h-10 pl-9 pr-3"
+            className="input-field h-10 w-full pl-9 pr-3"
             placeholder="레슨, 채널, YouTube 제목, 메모 검색"
             aria-label="레슨 검색"
           />
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
           <button
             type="button"
             onClick={() => changeShowFavoritesOnly(!showFavoritesOnly)}
