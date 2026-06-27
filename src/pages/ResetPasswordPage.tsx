@@ -1,7 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/db";
-import { sanitizeError, validatePassword } from "../lib/errors";
+import { validatePassword } from "../lib/errors";
+
+function formatAuthError(error: {
+  message: string;
+  code?: string;
+  status?: number;
+}): string {
+  const details = [
+    error.code ? `code: ${error.code}` : null,
+    error.status ? `status: ${error.status}` : null,
+  ].filter(Boolean);
+
+  return details.length > 0
+    ? `${error.message} (${details.join(", ")})`
+    : error.message;
+}
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -33,7 +48,8 @@ export function ResetPasswordPage() {
     const { error: err } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (err) {
-      setError(sanitizeError(err));
+      console.error("Password reset failed", err);
+      setError(formatAuthError(err));
       return;
     }
     setSuccess(true);
