@@ -23,7 +23,10 @@ export function MyPage() {
     setPwError("");
     setPwMessage("");
     setPwLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+    const redirectTo = new URL("/reset-password", window.location.origin).toString();
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo,
+    });
     setPwLoading(false);
     if (error) {
       setPwError(sanitizeError(error));
