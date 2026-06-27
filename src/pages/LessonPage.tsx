@@ -4,7 +4,7 @@ import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useClassLessonViewSettings, type DifficultyFilter } from "../hooks/useCardViewMode";
-import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, XIcon } from "../components/Icons";
+import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { DifficultyStars } from "../components/DifficultyRating";
 import { FavoriteButton } from "../components/FavoriteButton";
@@ -112,12 +112,6 @@ export function LessonPage() {
     setShowForm(true);
   }
 
-  function openEditForm(lesson: Lesson, e: React.MouseEvent) {
-    e.stopPropagation();
-    setEditingLessonId(lesson.id);
-    setShowForm(true);
-  }
-
   function closeForm() {
     setEditingLessonId(null);
     setShowForm(false);
@@ -188,14 +182,6 @@ export function LessonPage() {
       }
     }
     closeForm();
-    await loadData();
-  }
-
-  async function handleDelete(id: number, e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!window.confirm("Delete this lesson and its segments?")) return;
-    const db = await getDb();
-    await db.execute("DELETE FROM lessons WHERE id = $1", [id]);
     await loadData();
   }
 
@@ -516,16 +502,18 @@ export function LessonPage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2">
                     <h3 className="min-w-0 flex-1 truncate font-medium" style={{ color: "var(--text-primary)" }}>
                       {lesson.title}
                     </h3>
-                    <DifficultyStars value={lesson.difficulty ?? 0} />
-                    <FavoriteButton
-                      active={Boolean(lesson.is_favorite)}
-                      onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
-                      small
-                    />
+                    <div className="ml-auto flex shrink-0 flex-col items-end gap-1">
+                      <DifficultyStars value={lesson.difficulty ?? 0} />
+                      <FavoriteButton
+                        active={Boolean(lesson.is_favorite)}
+                        onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
+                        small
+                      />
+                    </div>
                   </div>
                   {lesson.video_type === "youtube" && (
                     <div className="mt-0.5 min-w-0">
@@ -540,26 +528,6 @@ export function LessonPage() {
                       </div>
                     </div>
                   )}
-                </div>
-                <div className="flex shrink-0 flex-col items-center justify-center">
-                  <div className="flex flex-col opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-                    <button
-                      data-no-reorder
-                      onClick={(e) => openEditForm(lesson, e)}
-                      className="icon-button h-6 w-6"
-                      aria-label="Edit lesson"
-                    >
-                      <PencilIcon className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      data-no-reorder
-                      onClick={(e) => handleDelete(lesson.id, e)}
-                      className="icon-button h-6 w-6"
-                      aria-label="Delete lesson"
-                    >
-                      <XIcon className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
                 </div>
               </div>
               {noteSummary && (
