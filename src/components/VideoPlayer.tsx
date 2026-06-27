@@ -19,6 +19,7 @@ interface VideoPlayerProps {
   segmentKey?: number;
   playCommand?: number;
   pauseCommand?: number;
+  muted?: boolean;
 }
 
 export interface VideoPlayerHandle {
@@ -116,6 +117,8 @@ interface YTPlayer {
   getCurrentTime: () => number;
   getDuration: () => number;
   setPlaybackRate: (rate: number) => void;
+  mute: () => void;
+  unMute: () => void;
   destroy: () => void;
 }
 
@@ -147,6 +150,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   segmentKey,
   playCommand,
   pauseCommand,
+  muted = false,
 }: VideoPlayerProps, ref) {
   const shellRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -325,6 +329,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             onReady: () => {
               playerRef.current = player;
               try { player.setPlaybackRate(speedRef.current); } catch {}
+              try {
+                if (muted) player.mute();
+                else player.unMute();
+              } catch {}
               emitDuration();
               window.setTimeout(emitDuration, 500);
               window.setTimeout(emitDuration, 1500);
@@ -373,6 +381,15 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       host.replaceChildren();
     };
   }, [videoType, videoId]);
+
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || videoType !== "youtube") return;
+    try {
+      if (muted) player.mute();
+      else player.unMute();
+    } catch {}
+  }, [muted, videoType]);
 
   useEffect(() => {
     const p = playerRef.current;

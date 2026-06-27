@@ -426,6 +426,22 @@ class SupabaseDB implements StudyDb {
       return { rowsAffected: 1 };
     }
 
+    if (normalized.startsWith("UPDATE lessons SET split_enabled")) {
+      const splitPosition = Math.max(10, Math.min(90, Number(bindValues[1] ?? 50)));
+      const rotatedSide = bindValues[2] === "bottom" ? "bottom" : "top";
+      const { error } = await supabase
+        .from("lessons")
+        .update({
+          split_enabled: Boolean(bindValues[0]),
+          split_position: splitPosition,
+          split_rotated_side: rotatedSide,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", Number(bindValues[3]));
+      if (error) throw error;
+      return { rowsAffected: 1 };
+    }
+
     if (normalized.startsWith("UPDATE segments SET sort_order")) {
       const { error } = await supabase
         .from("segments")

@@ -1,4 +1,5 @@
 export type VideoType = "youtube" | "local";
+export type SplitRotatedSide = "top" | "bottom";
 
 export interface Class {
   id: number;
@@ -20,6 +21,9 @@ export interface Lesson {
   difficulty: number;
   is_favorite: boolean;
   play_count: number;
+  split_enabled: boolean;
+  split_position: number;
+  split_rotated_side: SplitRotatedSide;
   sort_order: number;
   created_at: string;
   updated_at: string;

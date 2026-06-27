@@ -269,6 +269,17 @@ export function Grid3Icon(props: IconProps) {
   );
 }
 
+export function SplitIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M4 12h16" />
+      <path d="m9 8 3-2 3 2" />
+      <path d="m9 16 3 2 3-2" />
+    </IconBase>
+  );
+}
+
 export function ImageIcon(props: IconProps) {
   return (
     <IconBase {...props}>

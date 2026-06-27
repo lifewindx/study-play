@@ -18,6 +18,7 @@ import {
   PencilIcon,
   PlayIcon,
   RotateIcon,
+  SplitIcon,
   TrashIcon,
 } from "../components/Icons";
 
@@ -27,10 +28,22 @@ interface ActiveStudySession {
   startedAt: Date;
 }
 
+interface SplitVideoSettings {
+  enabled: boolean;
+  position: number;
+  rotatedSide: "top" | "bottom";
+}
+
 export function PlayerPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
   const videoRef = useRef<VideoPlayerHandle>(null);
+  const splitVideoRef = useRef<VideoPlayerHandle>(null);
+  const splitVideoTimeRef = useRef(0);
+  const lastSplitSyncRef = useRef(0);
+  const splitPreviewRef = useRef<HTMLDivElement>(null);
+  const splitDraggingRef = useRef(false);
+  const progressDraggingRef = useRef(false);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [classTitle, setClassTitle] = useState("");
@@ -49,6 +62,7 @@ export function PlayerPage() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLessonForm, setShowLessonForm] = useState(false);
+  const [splitDraft, setSplitDraft] = useState<SplitVideoSettings | null>(null);
   const [playCommand, setPlayCommand] = useState(0);
   const [pauseCommand, setPauseCommand] = useState(0);
   const hydratedAllSegmentIdsRef = useRef<Set<number>>(new Set());
@@ -64,7 +78,22 @@ export function PlayerPage() {
       "SELECT * FROM lessons WHERE id = $1",
       [Number(lessonId)]
     );
-    setLesson(lessonRow ?? null);
+    if (lessonRow) {
+      const storageKey = `studyplay-split-${lessonRow.id}`;
+      let storedSettings: SplitVideoSettings | null = null;
+      try {
+        storedSettings = JSON.parse(localStorage.getItem(storageKey) ?? "null") as SplitVideoSettings | null;
+      } catch {}
+      const hasCloudSplitSettings = typeof lessonRow.split_enabled === "boolean";
+      setLesson({
+        ...lessonRow,
+        split_enabled: hasCloudSplitSettings ? lessonRow.split_enabled : storedSettings?.enabled ?? false,
+        split_position: hasCloudSplitSettings ? lessonRow.split_position : storedSettings?.position ?? 50,
+        split_rotated_side: hasCloudSplitSettings ? lessonRow.split_rotated_side : storedSettings?.rotatedSide ?? "top",
+      });
+    } else {
+      setLesson(null);
+    }
     if (!lessonRow) {
       setSegments([]);
       return;
@@ -241,11 +270,13 @@ export function PlayerPage() {
         setActiveSegment(segment);
       }
       videoRef.current?.playSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
+      splitVideoRef.current?.playSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
       await startStudySession(segment);
       setPlayCommand((value) => value + 1);
     } else {
       setIsPlaying(false);
       videoRef.current?.pause();
+      splitVideoRef.current?.pause();
       setPauseCommand((value) => value + 1);
       await finishStudySession();
     }
@@ -258,6 +289,7 @@ export function PlayerPage() {
     setActiveSegment(seg);
     setIsPlaying(true);
     videoRef.current?.playSegment(seg.start_time, getSegmentEndTime(seg), seg.loop_gap);
+    splitVideoRef.current?.playSegment(seg.start_time, getSegmentEndTime(seg), seg.loop_gap);
     setPlayCommand((value) => value + 1);
     await startStudySession(seg);
   }
@@ -383,6 +415,59 @@ export function PlayerPage() {
 
   function handleTimeUpdate(time: number) {
     setCurrentTime(time);
+    if (
+      (splitDraft?.enabled ?? lesson?.split_enabled)
+      && Math.abs(time - splitVideoTimeRef.current) > 0.4
+      && Date.now() - lastSplitSyncRef.current > 1000
+    ) {
+      lastSplitSyncRef.current = Date.now();
+      splitVideoRef.current?.seekTo(time);
+    }
+  }
+
+  async function handleSaveSplit(settings: SplitVideoSettings) {
+    if (!lesson) return;
+    const normalizedSettings: SplitVideoSettings = {
+      enabled: settings.enabled,
+      position: Math.max(10, Math.min(90, Math.round(settings.position))),
+      rotatedSide: settings.rotatedSide === "bottom" ? "bottom" : "top",
+    };
+    setLesson((current) => current ? {
+      ...current,
+      split_enabled: normalizedSettings.enabled,
+      split_position: normalizedSettings.position,
+      split_rotated_side: normalizedSettings.rotatedSide,
+    } : current);
+    localStorage.setItem(`studyplay-split-${lesson.id}`, JSON.stringify(normalizedSettings));
+    setSplitDraft(null);
+
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE lessons SET split_enabled = $1, split_position = $2, split_rotated_side = $3, updated_at = datetime('now','localtime') WHERE id = $4",
+        [normalizedSettings.enabled, normalizedSettings.position, normalizedSettings.rotatedSide, lesson.id]
+      );
+    } catch (error) {
+      console.error("Failed to save split video settings", error);
+    }
+  }
+
+  function startSplitEditing() {
+    if (!lesson) return;
+    setSplitDraft({
+      enabled: true,
+      position: Math.max(10, Math.min(90, lesson.split_position ?? 50)),
+      rotatedSide: lesson.split_rotated_side === "bottom" ? "bottom" : "top",
+    });
+  }
+
+  function updateSplitPosition(clientY: number) {
+    const container = splitPreviewRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.height <= 0) return;
+    const position = Math.max(10, Math.min(90, Math.round(((clientY - rect.top) / rect.height) * 100)));
+    setSplitDraft((current) => current ? { ...current, position } : current);
   }
 
   const handleDurationChange = useCallback(async (duration: number) => {
@@ -418,12 +503,29 @@ export function PlayerPage() {
     const nextTime = activeSegment.start_time + segmentDuration * clampedRatio;
     setCurrentTime(nextTime);
     videoRef.current?.seekTo(nextTime);
+    splitVideoRef.current?.seekTo(nextTime);
   }
 
   function handleProgressPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (!activeSegment) return;
+    e.preventDefault();
+    progressDraggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
     const rect = e.currentTarget.getBoundingClientRect();
     seekWithinActiveSegment((e.clientX - rect.left) / rect.width);
+  }
+
+  function handleProgressPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!progressDraggingRef.current || !activeSegment) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    seekWithinActiveSegment((e.clientX - rect.left) / rect.width);
+  }
+
+  function handleProgressPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    progressDraggingRef.current = false;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
   }
 
   function handleProgressKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
@@ -493,6 +595,15 @@ export function PlayerPage() {
   const activeSegmentDuration = activeSegment ? activeSegmentEndTime - activeSegment.start_time : 0;
   const newSegmentStartTime = activeSegment ? activeSegmentEndTime : lastSegment ? getSegmentEndTime(lastSegment) : 0;
   const newSegmentEndTime = newSegmentStartTime + 10;
+  const splitEnabled = splitDraft?.enabled ?? Boolean(lesson.split_enabled);
+  const splitPosition = splitDraft?.position ?? Math.max(10, Math.min(90, lesson.split_position ?? 50));
+  const splitRotatedSide = splitDraft?.rotatedSide ?? (lesson.split_rotated_side === "bottom" ? "bottom" : "top");
+  const primaryClipPath = splitRotatedSide === "top"
+    ? `inset(${splitPosition}% 0 0 0)`
+    : `inset(0 0 ${100 - splitPosition}% 0)`;
+  const rotatedClipPath = splitRotatedSide === "top"
+    ? `inset(0 0 ${100 - splitPosition}% 0)`
+    : `inset(${splitPosition}% 0 0 0)`;
 
   return (
     <div className={isFullscreen ? "fullscreen-player" : "page-shell space-y-2 sm:space-y-3"}>
@@ -534,27 +645,135 @@ export function PlayerPage() {
           className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-xl border"}
           style={!isFullscreen ? { borderColor: "var(--border-color)" } : undefined}
         >
-          <div className={isFullscreen ? "h-full w-full relative" : "aspect-video"}>
-            <VideoPlayer
-              ref={videoRef}
-              videoType={lesson.video_type}
-              videoUrl={lesson.video_url}
-              startTime={activeSegment?.start_time ?? 0}
-              endTime={activeSegmentEndTime}
-              loopGap={activeSegment?.loop_gap ?? 0}
-              isPlaying={isPlaying}
-              speed={speed}
-              rotation={rotation}
-              flipH={flipH}
-              flipV={flipV}
-              onTimeUpdate={handleTimeUpdate}
-              onDurationChange={handleDurationChange}
-              onPlaybackStarted={() => void countLessonPlay()}
-              onPlaybackPaused={handlePlaybackPaused}
-              segmentKey={activeSegment?.id}
-              playCommand={playCommand}
-              pauseCommand={pauseCommand}
-            />
+          <div ref={splitPreviewRef} className={isFullscreen ? "relative h-full w-full" : "relative aspect-video"}>
+            <div
+              className="absolute inset-0"
+              style={splitEnabled ? { clipPath: primaryClipPath } : undefined}
+            >
+              <VideoPlayer
+                ref={videoRef}
+                videoType={lesson.video_type}
+                videoUrl={lesson.video_url}
+                startTime={activeSegment?.start_time ?? 0}
+                endTime={activeSegmentEndTime}
+                loopGap={activeSegment?.loop_gap ?? 0}
+                isPlaying={isPlaying}
+                speed={speed}
+                rotation={rotation}
+                flipH={flipH}
+                flipV={flipV}
+                onTimeUpdate={handleTimeUpdate}
+                onDurationChange={handleDurationChange}
+                onPlaybackStarted={() => void countLessonPlay()}
+                onPlaybackPaused={handlePlaybackPaused}
+                segmentKey={activeSegment?.id}
+                playCommand={playCommand}
+                pauseCommand={pauseCommand}
+              />
+            </div>
+            {splitEnabled && (
+              <div className="pointer-events-none absolute inset-0" style={{ clipPath: rotatedClipPath }}>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    transform: splitRotatedSide === "top"
+                      ? `translateY(-${100 - splitPosition}%)`
+                      : `translateY(${splitPosition}%)`,
+                  }}
+                >
+                  <VideoPlayer
+                    ref={splitVideoRef}
+                    videoType={lesson.video_type}
+                    videoUrl={lesson.video_url}
+                    startTime={activeSegment?.start_time ?? 0}
+                    endTime={activeSegmentEndTime}
+                    loopGap={activeSegment?.loop_gap ?? 0}
+                    isPlaying={isPlaying}
+                    speed={speed}
+                    rotation={rotation + 180}
+                    flipH={flipH}
+                    flipV={flipV}
+                    onTimeUpdate={(time) => {
+                      splitVideoTimeRef.current = time;
+                    }}
+                    segmentKey={activeSegment?.id}
+                    playCommand={playCommand}
+                    pauseCommand={pauseCommand}
+                    muted
+                  />
+                </div>
+              </div>
+            )}
+            {splitEnabled && (
+              <div
+                className="pointer-events-none absolute inset-x-0 z-10 h-px bg-white/60 shadow-[0_0_6px_rgba(0,0,0,0.7)]"
+                style={{ top: `${splitPosition}%` }}
+              />
+            )}
+            {splitDraft && (
+              <>
+                <div
+                  className="absolute inset-x-0 z-20 h-6 -translate-y-1/2 cursor-row-resize touch-none"
+                  style={{ top: `${splitPosition}%` }}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    splitDraggingRef.current = true;
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    updateSplitPosition(event.clientY);
+                  }}
+                  onPointerMove={(event) => {
+                    if (splitDraggingRef.current) updateSplitPosition(event.clientY);
+                  }}
+                  onPointerUp={(event) => {
+                    splitDraggingRef.current = false;
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                  }}
+                  onPointerCancel={() => {
+                    splitDraggingRef.current = false;
+                  }}
+                >
+                  <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)] px-2 py-1 font-mono text-[10px] font-semibold text-[var(--accent-contrast)] shadow-lg">
+                    {splitPosition}%
+                  </div>
+                </div>
+                <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5 rounded-xl border border-white/15 bg-black/75 p-1.5 text-white shadow-xl backdrop-blur-md">
+                  <button
+                    type="button"
+                    onClick={() => setSplitDraft((current) => current ? {
+                      ...current,
+                      rotatedSide: current.rotatedSide === "top" ? "bottom" : "top",
+                    } : current)}
+                    className="rounded-lg px-2.5 py-1.5 text-xs transition-colors hover:bg-white/15"
+                  >
+                    {splitRotatedSide === "top" ? "상단 180°" : "하단 180°"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitDraft(null)}
+                    className="rounded-lg px-2.5 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+                  >
+                    취소
+                  </button>
+                  {lesson.split_enabled && (
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveSplit({ ...splitDraft, enabled: false })}
+                      className="rounded-lg px-2.5 py-1.5 text-xs text-rose-300 transition-colors hover:bg-rose-400/15"
+                    >
+                      해제
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveSplit(splitDraft)}
+                    className="rounded-lg bg-[var(--accent)] px-2.5 py-1.5 text-xs font-semibold text-[var(--accent-contrast)]"
+                  >
+                    저장
+                  </button>
+                </div>
+              </>
+            )}
             {isFullscreen && (
               <button
                 onClick={toggleFullscreen}
@@ -567,9 +786,13 @@ export function PlayerPage() {
           </div>
           {!isFullscreen && (
             <div
-              className={`h-2 ${activeSegment ? "cursor-pointer" : ""}`}
-              style={{ backgroundColor: "var(--bg-tertiary)" }}
+              className={`relative h-4 touch-none ${activeSegment ? "cursor-pointer" : ""}`}
               onPointerDown={handleProgressPointerDown}
+              onPointerMove={handleProgressPointerMove}
+              onPointerUp={handleProgressPointerUp}
+              onPointerCancel={() => {
+                progressDraggingRef.current = false;
+              }}
               onKeyDown={handleProgressKeyDown}
               role="slider"
               tabIndex={activeSegment ? 0 : -1}
@@ -579,22 +802,27 @@ export function PlayerPage() {
               aria-valuenow={currentTime}
             >
               <div
-                className="h-full transition-[width] duration-150"
-                style={{
-                  width: activeSegment
-                    ? `${Math.max(
-                        0,
-                        Math.min(
-                          100,
-                          ((currentTime - activeSegment.start_time) /
-                            Math.max(activeSegmentDuration, 0.1)) *
-                            100
-                        )
-                      )}%`
-                    : "0%",
-                  backgroundColor: "var(--accent)",
-                }}
-              />
+                className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 overflow-hidden"
+                style={{ backgroundColor: "var(--bg-tertiary)" }}
+              >
+                <div
+                  className="h-full transition-[width] duration-150"
+                  style={{
+                    width: activeSegment
+                      ? `${Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            ((currentTime - activeSegment.start_time) /
+                              Math.max(activeSegmentDuration, 0.1)) *
+                              100
+                          )
+                        )}%`
+                      : "0%",
+                    backgroundColor: "var(--accent)",
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -666,6 +894,18 @@ export function PlayerPage() {
                       aria-label="Flip vertically"
                     >
                       <FlipIcon className="h-4 w-4 rotate-90" />
+                    </button>
+                    <button
+                      onClick={startSplitEditing}
+                      className="control-chip"
+                      style={{
+                        backgroundColor: splitEnabled ? "var(--accent)" : "var(--bg-tertiary)",
+                        color: splitEnabled ? "var(--accent-contrast)" : "var(--text-primary)",
+                      }}
+                      aria-label="Split video"
+                      title="Split video"
+                    >
+                      <SplitIcon className="h-4 w-4" />
                     </button>
                     <button onClick={toggleFullscreen} className="control-chip" aria-label="Fullscreen">
                       <FullscreenIcon className="h-4 w-4" />
