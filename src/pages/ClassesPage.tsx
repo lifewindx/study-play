@@ -6,7 +6,6 @@ import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useCardViewMode } from "../hooks/useCardViewMode";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { ModalBackdrop } from "../components/ModalBackdrop";
-import { PencilIcon, XIcon } from "../components/Icons";
 
 export function ClassesPage() {
   const navigate = useNavigate();
@@ -42,14 +41,6 @@ export function ClassesPage() {
     setShowForm(true);
   }
 
-  function openEditForm(cls: Class, e: React.MouseEvent) {
-    e.stopPropagation();
-    setEditingClassId(cls.id);
-    setTitle(cls.title);
-    setDescription(cls.description ?? "");
-    setShowForm(true);
-  }
-
 function closeForm() {
     setTitle("");
     setDescription("");
@@ -75,14 +66,6 @@ function closeForm() {
       );
     }
     closeForm();
-    await loadClasses();
-  }
-
-  async function handleDelete(id: number, e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!window.confirm("Delete this class and its lessons?")) return;
-    const db = await getDb();
-    await db.execute("DELETE FROM classes WHERE id = $1", [id]);
     await loadClasses();
   }
 
@@ -117,9 +100,8 @@ function closeForm() {
     <div className="page-shell">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <p className="section-title mb-2">Library</p>
           <h1 className="text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
-            Practice classes
+            {classes.length} Classes
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -198,32 +180,12 @@ function closeForm() {
                 </p>
               )}
             </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <span
-                className="mr-1 rounded-lg px-2 py-1 text-xs font-medium"
-                style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-tertiary)" }}
-              >
-                {lessonCountByClassId[cls.id] ?? 0}
-              </span>
-              <div className="flex flex-col items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-                <button
-                  data-no-reorder
-                  onClick={(e) => openEditForm(cls, e)}
-                  className="icon-button h-8 w-8"
-                  aria-label="Edit class"
-                >
-                  <PencilIcon className="h-4 w-4" />
-                </button>
-                <button
-                  data-no-reorder
-                  onClick={(e) => handleDelete(cls.id, e)}
-                  className="icon-button h-8 w-8"
-                  aria-label="Delete class"
-                >
-                  <XIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            <span
+              className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium"
+              style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-tertiary)" }}
+            >
+              {lessonCountByClassId[cls.id] ?? 0}
+            </span>
           </div>
         ))}
         {classes.length === 0 && (

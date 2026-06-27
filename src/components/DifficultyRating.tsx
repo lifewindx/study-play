@@ -17,11 +17,11 @@ export function DifficultyStars({ value }: { value: number }) {
 
   return (
     <span className="flex shrink-0 items-center gap-px" aria-label={`난이도 ${rating}/5`} title={`난이도 ${rating}/5`}>
-      {STARS.map((star) => (
+      {STARS.slice(0, rating).map((star) => (
         <span
           key={star}
           className="text-xs leading-none"
-          style={{ color: star <= rating ? "var(--warning)" : "var(--text-muted)" }}
+          style={{ color: "var(--warning)" }}
           aria-hidden="true"
         >
           ★

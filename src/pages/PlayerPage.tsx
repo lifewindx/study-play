@@ -9,11 +9,11 @@ import { LessonFormModal } from "../components/LessonFormModal";
 import { DifficultyRating } from "../components/DifficultyRating";
 import { FavoriteButton } from "../components/FavoriteButton";
 import {
+  ArrowLeftIcon,
   FlipIcon,
   FullscreenExitIcon,
   FullscreenIcon,
   GaugeIcon,
-  HomeIcon,
   PauseIcon,
   PencilIcon,
   PlayIcon,
@@ -499,10 +499,15 @@ export function PlayerPage() {
       {!isFullscreen && (
         <div className="flex items-start justify-between gap-3 text-sm" style={{ color: "var(--text-muted)" }}>
           <div className="flex min-w-0 items-center gap-1.5">
-            <button onClick={() => navigate("/classes")} className="icon-button shrink-0" aria-label="Library">
-              <HomeIcon className="h-4 w-4" />
+            <button
+              onClick={() => navigate("/classes")}
+              className="icon-button shrink-0 border"
+              style={{ borderColor: "var(--border-color)" }}
+              aria-label="이전"
+              title="이전"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
             </button>
-            <span className="hidden sm:inline">/</span>
             <button
               onClick={() => navigate(`/classes/${lesson.class_id}`)}
               className="hidden sm:block rounded-xl px-2 py-1 transition-colors hover:bg-[var(--bg-tertiary)] truncate max-w-[120px]"
@@ -510,7 +515,7 @@ export function PlayerPage() {
               {classTitle || "Class"}
             </button>
             <span className="hidden sm:inline">/</span>
-            <h1 className="truncate text-lg sm:text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
+            <h1 className="ml-1 truncate text-lg font-semibold sm:text-2xl" style={{ color: "var(--text-primary)" }}>
               {lesson.title}
             </h1>
           </div>
@@ -523,7 +528,7 @@ export function PlayerPage() {
 
       <div
         ref={playerContainerRef}
-        className={isFullscreen ? "fullscreen-video-container" : "player-panel"}
+        className={isFullscreen ? "fullscreen-video-container" : undefined}
       >
         <div
           className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-xl border"}
@@ -677,8 +682,9 @@ export function PlayerPage() {
 
       {!isFullscreen && (
         <>
-          <div>
-            <div className="mb-3 flex items-center justify-between">
+          <div className="border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+            <div className="px-4 sm:px-6">
+              <div className="mb-3 flex items-center justify-between">
               <h2 className="section-title">Segments</h2>
               <button
                 onClick={() => {
@@ -690,44 +696,45 @@ export function PlayerPage() {
               >
                 + Segment
               </button>
-            </div>
-
-            {segmentError && (
-              <p className="mb-3 rounded-lg border px-3 py-2 text-sm" style={{ color: "var(--danger, #ef4444)", borderColor: "var(--danger, #ef4444)" }}>
-                {segmentError}
-              </p>
-            )}
-
-            {showNewSegment && (
-              <div className="mb-3">
-                <SegmentEditor
-                  key={`${newSegmentStartTime}-${newSegmentEndTime}`}
-                  initialStartTime={newSegmentStartTime}
-                  initialEndTime={newSegmentEndTime}
-                  isSaving={isSavingSegment}
-                  onSave={handleSaveSegment}
-                  onCancel={() => {
-                    setShowNewSegment(false);
-                    setSegmentError("");
-                  }}
-                />
               </div>
-            )}
 
-            <SegmentList
-              segments={segments}
-              activeSegmentId={activeSegment?.id ?? null}
-              editingSegmentId={editingSegmentId}
-              onSelect={handleSelectSegment}
-              onEdit={(seg) => {
-                setEditingSegmentId(seg.id);
-                setShowNewSegment(false);
-              }}
-              onSaveEdit={handleSaveSegment}
-              onCancelEdit={() => setEditingSegmentId(null)}
-              onDelete={handleDeleteSegment}
-              onReorder={handleReorderSegment}
-            />
+              {segmentError && (
+                <p className="mb-3 rounded-lg border px-3 py-2 text-sm" style={{ color: "var(--danger, #ef4444)", borderColor: "var(--danger, #ef4444)" }}>
+                  {segmentError}
+                </p>
+              )}
+
+              {showNewSegment && (
+                <div className="mb-3">
+                  <SegmentEditor
+                    key={`${newSegmentStartTime}-${newSegmentEndTime}`}
+                    initialStartTime={newSegmentStartTime}
+                    initialEndTime={newSegmentEndTime}
+                    isSaving={isSavingSegment}
+                    onSave={handleSaveSegment}
+                    onCancel={() => {
+                      setShowNewSegment(false);
+                      setSegmentError("");
+                    }}
+                  />
+                </div>
+              )}
+
+              <SegmentList
+                segments={segments}
+                activeSegmentId={activeSegment?.id ?? null}
+                editingSegmentId={editingSegmentId}
+                onSelect={handleSelectSegment}
+                onEdit={(seg) => {
+                  setEditingSegmentId(seg.id);
+                  setShowNewSegment(false);
+                }}
+                onSaveEdit={handleSaveSegment}
+                onCancelEdit={() => setEditingSegmentId(null)}
+                onDelete={handleDeleteSegment}
+                onReorder={handleReorderSegment}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 border-t pt-4 sm:pt-5" style={{ borderColor: "var(--border-color)" }}>

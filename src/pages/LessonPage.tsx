@@ -3,9 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { getCardGridClassName, useClassLessonViewSettings, type DifficultyFilter } from "../hooks/useCardViewMode";
-import { ChevronRightIcon, DifficultySortIcon, HeartIcon, HomeIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon } from "../components/Icons";
+import { getCardGridClassName, useClassLessonViewSettings } from "../hooks/useCardViewMode";
+import { ArrowLeftIcon, HeartIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, Trash2Icon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
+import { DifficultyFilterMenu } from "../components/DifficultyFilterMenu";
 import { DifficultyStars } from "../components/DifficultyRating";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { LessonFormModal } from "../components/LessonFormModal";
@@ -139,6 +140,13 @@ export function LessonPage() {
     );
     closeClassForm();
     await loadData();
+  }
+
+  async function handleDeleteClass() {
+    if (!cls || !window.confirm(`Delete "${cls.title}" and all of its lessons?`)) return;
+    const db = await getDb();
+    await db.execute("DELETE FROM classes WHERE id = $1", [cls.id]);
+    navigate("/classes");
   }
 
   async function handleSave({ title, videoUrl }: { title: string; videoUrl: string }) {
@@ -294,21 +302,23 @@ export function LessonPage() {
 
   return (
     <div className="page-shell">
-      <div className="mb-6 border-b pb-5" style={{ borderColor: "var(--border-color)" }}>
-        <nav className="flex min-w-0 items-center gap-1.5 gap-y-1 text-sm flex-wrap" aria-label="Breadcrumb">
+      <div
+        className="mb-4 flex flex-wrap items-center gap-3 border-b pb-4 lg:flex-nowrap"
+        style={{ borderColor: "var(--border-color)" }}
+      >
+        <nav className="flex min-w-0 flex-1 items-center gap-1.5 text-sm" aria-label="Breadcrumb">
           <button
             type="button"
             onClick={() => navigate("/classes")}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors hover:bg-[var(--bg-tertiary)]"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Library"
+            className="icon-button h-8 w-8 shrink-0 border"
+            style={{ borderColor: "var(--border-color)" }}
+            aria-label="이전"
+            title="이전"
           >
-            <HomeIcon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Library</span>
+            <ArrowLeftIcon className="h-4 w-4" />
           </button>
-          <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
           <h1
-            className="min-w-0 truncate text-2xl font-semibold sm:text-3xl"
+            className="min-w-0 truncate text-xl font-semibold sm:text-2xl"
             style={{ color: "var(--text-primary)" }}
             title={cls.title}
           >
@@ -323,16 +333,13 @@ export function LessonPage() {
             <PencilIcon className="h-3.5 w-3.5" />
           </button>
         </nav>
-      </div>
-
-      <div className="mb-4 flex items-center gap-3">
-        <div className="relative w-full sm:w-3/5">
+        <div className="relative order-3 w-full lg:order-none lg:w-[19.2rem] lg:shrink-0">
           <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="input-field h-10 w-full pl-9 pr-3"
+            className="input-field h-10 w-full pl-9 pr-3 placeholder:opacity-40"
             placeholder="레슨, 채널, YouTube 제목, 메모 검색"
             aria-label="레슨 검색"
           />
@@ -352,26 +359,7 @@ export function LessonPage() {
           >
             <HeartIcon className="h-4 w-4" style={{ fill: showFavoritesOnly ? "currentColor" : "none" }} />
           </button>
-          <label className="toolbar-select" title="난이도 필터">
-            <DifficultySortIcon className="h-4 w-4" style={{ color: difficultyFilter !== "all" ? "var(--warning)" : undefined }} />
-            <select
-              value={difficultyFilter === "all" ? "all" : String(difficultyFilter)}
-              onChange={(event) => {
-                const v = event.target.value;
-                const next: DifficultyFilter = v === "all" ? "all" : (Number(v) as 1 | 2 | 3 | 4 | 5);
-                changeDifficultyFilter(next);
-              }}
-              className="toolbar-select-control"
-              aria-label="난이도 필터"
-            >
-              <option value="all">전체</option>
-              <option value="1">★</option>
-              <option value="2">★★</option>
-              <option value="3">★★★</option>
-              <option value="4">★★★★</option>
-              <option value="5">★★★★★</option>
-            </select>
-          </label>
+          <DifficultyFilterMenu value={difficultyFilter} onChange={changeDifficultyFilter} />
           <button
             type="button"
             onClick={toggleShowLessonThumbnails}
@@ -440,6 +428,14 @@ export function LessonPage() {
               maxLength={500}
             />
             <div className="flex justify-end gap-2">
+              <button
+                onClick={handleDeleteClass}
+                className="btn-ghost mr-auto gap-1.5"
+                style={{ color: "var(--danger, #ef4444)" }}
+              >
+                <Trash2Icon className="h-4 w-4" />
+                Delete
+              </button>
               <button onClick={closeClassForm} className="btn-ghost">
                 Cancel
               </button>
@@ -478,7 +474,7 @@ export function LessonPage() {
               <div className="flex w-full flex-1 items-start gap-3">
                 {showLessonThumbnails && (
                   <div
-                    className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-xl`}
+                    className={`${thumbnailClassName} shrink-0 overflow-hidden rounded-md`}
                     style={{ backgroundColor: "var(--bg-tertiary)" }}
                   >
                     {thumbnailUrl ? (
@@ -502,38 +498,43 @@ export function LessonPage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-center gap-2">
                     <h3 className="min-w-0 flex-1 truncate font-medium" style={{ color: "var(--text-primary)" }}>
                       {lesson.title}
                     </h3>
-                    <div className="ml-auto flex shrink-0 flex-col items-end gap-1">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-end">
                       <DifficultyStars value={lesson.difficulty ?? 0} />
-                      <FavoriteButton
-                        active={Boolean(lesson.is_favorite)}
-                        onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
-                        small
-                      />
                     </div>
                   </div>
-                  {lesson.video_type === "youtube" && (
-                    <div className="mt-0.5 min-w-0">
-                      <p className="truncate text-[10px] leading-snug" style={{ color: "var(--text-muted)" }}>
-                        {youtubeMeta === undefined
-                          ? "YouTube title loading..."
-                          : youtubeMeta.title ?? "YouTube title unavailable"}
-                      </p>
-                      <div className="mt-1 flex items-center gap-1 text-[9px] leading-none" style={{ color: "var(--text-muted)" }}>
-                        <PlayIcon className="h-2.5 w-2.5" />
-                        <span>{lesson.play_count ?? 0}</span>
-                      </div>
+                  <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      {lesson.video_type === "youtube" && (
+                        <>
+                          <p className="truncate text-[10px] leading-snug" style={{ color: "var(--text-muted)" }}>
+                            {youtubeMeta === undefined
+                              ? "YouTube title loading..."
+                              : youtubeMeta.title ?? "YouTube title unavailable"}
+                          </p>
+                          <div className="mt-1 flex items-center gap-1 text-[9px] leading-none" style={{ color: "var(--text-muted)" }}>
+                            <PlayIcon className="h-2.5 w-2.5" />
+                            <span>{lesson.play_count ?? 0}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  )}
+                    <FavoriteButton
+                      active={Boolean(lesson.is_favorite)}
+                      onChange={(isFavorite) => void handleFavoriteChange(lesson.id, isFavorite)}
+                      small
+                      bare
+                    />
+                      </div>
                 </div>
               </div>
               {noteSummary && (
                 <p
-                  className="mt-2 w-full truncate border-t pt-2 text-xs font-medium"
-                  style={{ color: "var(--warning)", borderColor: "var(--border-color)" }}
+                  className="mt-2 w-full truncate rounded-md px-2 py-1.5 text-xs font-medium"
+                  style={{ color: "var(--warning)", backgroundColor: "var(--warning-soft)" }}
                   title={lesson.notes}
                 >
                   {noteSummary}
