@@ -10,6 +10,7 @@ database, and import `mysql/schema.sql`.
 Connect the GitHub repository as a Node.js application.
 
 - Node.js: 22.x
+- Framework: Other or Express
 - Build command: `npm run build`
 - Start command: `npm start`
 - Entry file (when requested): `server/index.js`

@@ -17,7 +17,7 @@ import {
 import { executeForUser, selectForUser } from "./operations.js";
 
 const app = express();
-const port = Number(process.env.PORT || 3340);
+const port = Number(process.env.PORT || 3000);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 app.set("trust proxy", 1);
