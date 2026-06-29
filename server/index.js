@@ -1,6 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import express from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -19,6 +21,12 @@ import { executeForUser, selectForUser } from "./operations.js";
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const clientEntry = path.join(root, "dist", "index.html");
+
+if (!existsSync(clientEntry)) {
+  console.log("Frontend build not found; building Vite application...");
+  execFileSync("npm", ["run", "build"], { cwd: root, stdio: "inherit" });
+}
 
 app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -213,7 +221,7 @@ app.delete("/api/study-history", requireAuth, async (req, res, next) => {
 });
 
 app.use(express.static(path.join(root, "dist")));
-app.get("/{*path}", (_req, res) => res.sendFile(path.join(root, "dist", "index.html")));
+app.get("/{*path}", (_req, res) => res.sendFile(clientEntry));
 
 app.use((error, _req, res, _next) => {
   console.error(error);
