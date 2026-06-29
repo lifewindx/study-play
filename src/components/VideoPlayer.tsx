@@ -61,6 +61,7 @@ function buildYoutubeEmbedSrc(videoId: string): string {
     rel: "0",
     showinfo: "0",
     playsinline: "1",
+    vq: "hd1080",
     widget_referrer: YOUTUBE_WIDGET_REFERRER,
   });
   const origin = getYoutubeOrigin();
@@ -117,6 +118,7 @@ interface YTPlayer {
   getCurrentTime: () => number;
   getDuration: () => number;
   setPlaybackRate: (rate: number) => void;
+  setPlaybackQuality?: (quality: string) => void;
   mute: () => void;
   unMute: () => void;
   destroy: () => void;
@@ -201,6 +203,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     loopTimerRef.current = window.setTimeout(executeLoop, Math.max(remaining, 0.1) * 1000);
   }
 
+  function forceHighQuality() {
+    const p = playerRef.current;
+    if (!p || typeof p.setPlaybackQuality !== "function") return;
+    try {
+      p.setPlaybackQuality("hd1080");
+    } catch {}
+  }
+
   function executeLoop() {
     if (!playbackIntentRef.current) return;
     const st = startTimeRef.current;
@@ -208,6 +218,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     const p = playerRef.current;
     if (!p) return;
     p.seekTo(st, true);
+    forceHighQuality();
     if (gap > 0) {
       if (gapTimerRef.current) clearTimeout(gapTimerRef.current);
       gapTimerRef.current = window.setTimeout(() => {
@@ -268,6 +279,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       const p = playerRef.current;
       if (!p || videoType !== "youtube") return;
       if (start > 0) p.seekTo(start, true);
+      forceHighQuality();
       p.playVideo();
       scheduleLoop();
       startPolling();
@@ -329,6 +341,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             onReady: () => {
               playerRef.current = player;
               try { player.setPlaybackRate(speedRef.current); } catch {}
+              forceHighQuality();
               try {
                 if (muted) player.mute();
                 else player.unMute();
@@ -360,6 +373,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 if (state === (window.YT?.PlayerState.ENDED ?? 0)) {
                   if (playbackIntentRef.current) {
                     player.seekTo(startTimeRef.current, true);
+                    forceHighQuality();
                     player.playVideo();
                   }
                 }
