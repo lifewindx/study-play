@@ -1,55 +1,31 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { supabase } from "../lib/db";
+import { authApi } from "../lib/api";
+import { useAuth } from "../hooks/useAuth";
 import { sanitizeError } from "../lib/errors";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { refresh } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setResent(false);
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
-    if (err) {
-      if (err.message.includes("Email not confirmed")) {
-        setError("Email not confirmed");
-      } else {
-        setError(sanitizeError(err));
-      }
-      return;
-    }
-    navigate("/classes");
-  }
-
-  async function handleResendConfirmation() {
-    if (!email) return;
-    setResending(true);
-    setError("");
-    const { error: err } = await supabase.auth.resend({
-      type: "signup",
-      email,
-    });
-    setResending(false);
-    if (err) {
+    try {
+      await authApi.login(email, password);
+      await refresh();
+      navigate("/classes");
+    } catch (err) {
       setError(sanitizeError(err));
-      return;
+    } finally {
+      setLoading(false);
     }
-    setResent(true);
   }
-
-  const isEmailNotConfirmed = error === "Email not confirmed";
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -82,30 +58,10 @@ export function LoginPage() {
             minLength={8}
             maxLength={128}
           />
-          {error && !isEmailNotConfirmed && (
+          {error && (
             <p className="text-sm" style={{ color: "var(--danger, #ef4444)" }}>
               {error}
             </p>
-          )}
-          {isEmailNotConfirmed && (
-            <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
-              <p className="text-sm" style={{ color: "var(--text-primary)" }}>
-                Email not confirmed. Check your inbox.
-              </p>
-              {resent && (
-                <p className="text-xs" style={{ color: "var(--accent)" }}>
-                  Confirmation email resent. Check your inbox.
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={handleResendConfirmation}
-                disabled={resending}
-                className="btn-ghost text-xs w-full"
-              >
-                {resending ? "Sending..." : "Resend confirmation email"}
-              </button>
-            </div>
           )}
           <button
             type="submit"

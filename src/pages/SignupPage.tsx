@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "../lib/db";
+import { authApi } from "../lib/api";
+import { useAuth } from "../hooks/useAuth";
 import { sanitizeError, validatePassword } from "../lib/errors";
 
 export function SignupPage() {
+  const { refresh } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,13 +23,15 @@ export function SignupPage() {
 
     setSuccess(false);
     setLoading(true);
-    const { error: err } = await supabase.auth.signUp({ email, password });
-    setLoading(false);
-    if (err) {
+    try {
+      await authApi.signup(email, password);
+      await refresh();
+      setSuccess(true);
+    } catch (err) {
       setError(sanitizeError(err));
-      return;
+    } finally {
+      setLoading(false);
     }
-    setSuccess(true);
   }
 
   if (success) {
@@ -35,13 +39,13 @@ export function SignupPage() {
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
           <h1 className="mb-2 text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
-            Check your email
+            Account created
           </h1>
           <p className="mb-6 text-sm" style={{ color: "var(--text-muted)" }}>
-            We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
+            Your account for <strong>{email}</strong> is ready.
           </p>
-          <Link to="/login" className="btn-primary inline-block">
-            Go to sign in
+          <Link to="/classes" className="btn-primary inline-block">
+            Continue
           </Link>
         </div>
       </div>

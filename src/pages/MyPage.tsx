@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
-import { supabase, clearAllUserData, clearStudyHistory } from "../lib/db";
+import { clearAllUserData, clearStudyHistory } from "../lib/db";
+import { authApi } from "../lib/api";
 import { sanitizeError } from "../lib/errors";
+import { validatePassword } from "../lib/errors";
 import { Trash2Icon, MoonIcon, SunIcon } from "../components/Icons";
 
 export function MyPage() {
@@ -13,25 +15,31 @@ export function MyPage() {
   const [pwMessage, setPwMessage] = useState("");
   const [pwError, setPwError] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  async function handleSendResetLink() {
-    if (!user?.email) return;
+  async function handleChangePassword() {
     setPwError("");
     setPwMessage("");
+    const validationError = validatePassword(newPassword);
+    if (validationError) {
+      setPwError(validationError);
+      return;
+    }
     setPwLoading(true);
-    const redirectTo = new URL("/reset-password", window.location.origin).toString();
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo,
-    });
-    setPwLoading(false);
-    if (error) {
+    try {
+      await authApi.changePassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setPwMessage("Password changed.");
+    } catch (error) {
       setPwError(sanitizeError(error));
-    } else {
-      setPwMessage("Reset link sent. Check your email.");
+    } finally {
+      setPwLoading(false);
     }
   }
 
@@ -89,15 +97,28 @@ export function MyPage() {
 
       <div className="card p-3 space-y-3">
         <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Change password</h3>
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          We'll send a secure link to <strong>{user?.email}</strong> to reset your password.
-        </p>
+        <input
+          type="password"
+          className="input-field"
+          placeholder="Current password"
+          value={currentPassword}
+          onChange={(event) => setCurrentPassword(event.target.value)}
+          autoComplete="current-password"
+        />
+        <input
+          type="password"
+          className="input-field"
+          placeholder="New password (8+ chars, special char)"
+          value={newPassword}
+          onChange={(event) => setNewPassword(event.target.value)}
+          autoComplete="new-password"
+        />
         <button
-          onClick={handleSendResetLink}
-          disabled={pwLoading}
+          onClick={handleChangePassword}
+          disabled={pwLoading || !currentPassword || !newPassword}
           className="btn-ghost text-sm w-full"
         >
-          {pwLoading ? "Sending..." : "Send reset link"}
+          {pwLoading ? "Changing..." : "Change password"}
         </button>
         {pwError && <p className="text-xs" style={{ color: "var(--danger, #ef4444)" }}>{pwError}</p>}
         {pwMessage && <p className="text-xs" style={{ color: "var(--success, #11895b)" }}>{pwMessage}</p>}

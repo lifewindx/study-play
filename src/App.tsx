@@ -7,7 +7,6 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { MyPage } from "./pages/MyPage";
-import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { ThemeProvider } from "./hooks/useTheme";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import type { ReactNode } from "react";
@@ -32,7 +31,6 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/*"
         element={

@@ -8,11 +8,12 @@ const messages: Record<string, string> = {
   "Invalid API key": "Service temporarily unavailable. Please try again later",
 };
 
-export function sanitizeError(err: { message: string }): string {
+export function sanitizeError(err: unknown): string {
+  if (!(err instanceof Error)) return "Something went wrong. Please try again.";
   for (const [key, value] of Object.entries(messages)) {
     if (err.message.includes(key)) return value;
   }
-  return "Something went wrong. Please try again.";
+  return err.message || "Something went wrong. Please try again.";
 }
 
 const SPECIAL_CHAR_REGEX = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;

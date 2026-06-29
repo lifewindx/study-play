@@ -6,5 +6,8 @@ export default defineConfig({
   server: {
     port: 3339,
     strictPort: true,
+    proxy: {
+      "/api": "http://localhost:3340",
+    },
   },
 });
