@@ -62,7 +62,30 @@ const tableColumns = {
   routine_completions: ["id", "user_id", "routine_item_id", "routine_date", "completed_at", "created_at"],
 };
 
+const columnDefaults = {
+  description: "",
+  video_url: "",
+  video_type: "youtube",
+  local_file_path: null,
+  notes: "",
+  difficulty: 0,
+  is_favorite: false,
+  play_count: 0,
+  split_enabled: false,
+  split_position: 50,
+  split_rotated_side: "top",
+  label: "",
+  start_time: 0,
+  end_time: 0,
+  loop_gap: 0,
+  sort_order: 0,
+  segment_id: null,
+  completed_at: null,
+  duration_seconds: 0,
+};
+
 function valueFor(column, value) {
+  if (value === undefined) value = columnDefaults[column] ?? null;
   if (column.endsWith("_at")) return mysqlDate(value);
   if (typeof value === "boolean") return value ? 1 : 0;
   return value;
