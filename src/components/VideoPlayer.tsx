@@ -515,12 +515,6 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           </div>
         )}
       </div>
-      {videoType === "youtube" && videoId && (
-        <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black to-transparent" />
-        </>
-      )}
     </div>
   );
 });
