@@ -52,7 +52,7 @@ function getYoutubeOrigin(): string | null {
 function buildYoutubeEmbedSrc(videoId: string): string {
   const params = new URLSearchParams({
     autoplay: "0",
-    controls: "0",
+    controls: "1",
     disablekb: "1",
     enablejsapi: "1",
     fs: "0",
