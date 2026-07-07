@@ -1,0 +1,246 @@
+{
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/tailwind.config.js": {
+    "mtime": 1778549527.967519,
+    "hash": "087845ed639055ad9f8a6a389820e431"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/vite.config.ts": {
+    "mtime": 1783414146.922481,
+    "hash": "d44246024e3b1be06f0e536e21d908d5"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/postcss.config.js": {
+    "mtime": 1778549528.5545576,
+    "hash": "c735540bb63936a123bc867d950c9f69"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/test/operations.test.js": {
+    "mtime": 1782709495.3360517,
+    "hash": "ad00806508cae1aad21e03bcb82f80b1"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/server/db.js": {
+    "mtime": 1782709170.353279,
+    "hash": "94aea2605a494fb9785ebdf88e9372ce"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/server/auth.js": {
+    "mtime": 1782709170.4566286,
+    "hash": "e7c7e6a3ab7cb5bf1fb652b63f8b5441"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/server/index.js": {
+    "mtime": 1782712454.0811872,
+    "hash": "753db7e2759943705b231aada58767fd"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/server/operations.js": {
+    "mtime": 1782709465.2334025,
+    "hash": "01843895a640728c905213015465e9e1"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/009_add_lesson_play_count.sql": {
+    "mtime": 1782242320.5909624,
+    "hash": "ff6d81ff93ee9260ade638b9816af11b"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/008_add_lesson_favorite.sql": {
+    "mtime": 1782239520.5824745,
+    "hash": "f3767b938285c5aa9fd717110b6308d8"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/004_routine_completions.sql": {
+    "mtime": 1781550165.7211213,
+    "hash": "30367a5512cd57d54a8a2ee146a9ec09"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/007_add_lesson_difficulty.sql": {
+    "mtime": 1782230096.0538108,
+    "hash": "5ae147c95fcd68de1bb5de8418800f3b"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/010_harden_parent_ownership_rls.sql": {
+    "mtime": 1782489027.672508,
+    "hash": "157e46370cac9903fd8d81cbc2e59273"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/006_add_lesson_notes.sql": {
+    "mtime": 1782149334.1826046,
+    "hash": "d241ff5f76abdeb3282a088d6a31f347"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/005_deduplicate_all_segments.sql": {
+    "mtime": 1782149334.182497,
+    "hash": "f9f610617dac2fc098389710a5ef904a"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/003_routine_items.sql": {
+    "mtime": 1781536320.0500343,
+    "hash": "208ff11f962e392d27f5f57468d7f1f1"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/001_initial_schema.sql": {
+    "mtime": 1779130991.833349,
+    "hash": "753da74c89a86071e8e8d05dcceffddb"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/011_add_lesson_split_video.sql": {
+    "mtime": 1782565486.8371558,
+    "hash": "dc8d1306082df201e97eae0903cfe9a8"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/supabase/migrations/002_backfill_all_segments.sql": {
+    "mtime": 1781266314.4522276,
+    "hash": "ec908404ac2daff1b28f2601b679ee70"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/mysql/schema.sql": {
+    "mtime": 1782709244.655629,
+    "hash": "9454ccc4921e4f2d48dc681beede8874"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/scripts/migrate-supabase-to-mysql.js": {
+    "mtime": 1782711740.577808,
+    "hash": "b4582e1ba6429cd862328613b08557ed"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/App.tsx": {
+    "mtime": 1783414146.9217675,
+    "hash": "fd2ca838b862f7de0fc74fce191cb38e"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/main.tsx": {
+    "mtime": 1778549553.3079093,
+    "hash": "939d1c08b4bd846fbca58f824f15d548"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/types.ts": {
+    "mtime": 1782565486.7317882,
+    "hash": "4aa111a29ff16b0ffed8ad651838ca99"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/vite-env.d.ts": {
+    "mtime": 1783414146.9221385,
+    "hash": "8f836646dc958567420999e0a1290207"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/SegmentList.tsx": {
+    "mtime": 1782478735.6171968,
+    "hash": "f36ff04ea9974948255c5737ea8ac8b6"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/ModalBackdrop.tsx": {
+    "mtime": 1782227489.849046,
+    "hash": "9759c815999b48cff89574f9387ff0ba"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/SegmentEditor.tsx": {
+    "mtime": 1782413517.8125398,
+    "hash": "a0e38b50de91397546ff1dcd4c884c61"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/DifficultyRating.tsx": {
+    "mtime": 1782558239.1741717,
+    "hash": "e4dbe0206e0ff7dfc2160f838724a964"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/DifficultyFilterMenu.tsx": {
+    "mtime": 1782559228.0439057,
+    "hash": "5ecb7277da8af0ed17e9337ed3de1142"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/AppHeader.tsx": {
+    "mtime": 1782242987.412823,
+    "hash": "1223b49e699a6fdc45dc1e68711f53f4"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/LessonFormModal.tsx": {
+    "mtime": 1782227489.8493423,
+    "hash": "5a4743e0b1b68af5d2b182f0b4c91fe0"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/Layout.tsx": {
+    "mtime": 1783413361.3433414,
+    "hash": "1cf7049d13c5f928f1c5c680003338ec"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/ThemeToggle.tsx": {
+    "mtime": 1782488027.3053613,
+    "hash": "90e3ff561793d4b4bed35c874a98c7c3"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/CardViewToggle.tsx": {
+    "mtime": 1782557949.4014077,
+    "hash": "b4e756b00cdc7973e89fe3437d1c77d6"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/Icons.tsx": {
+    "mtime": 1782565520.6348968,
+    "hash": "542248302ee0549c530db49926327995"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/VideoPlayer.tsx": {
+    "mtime": 1783414146.9219534,
+    "hash": "6a657831be60112d3dfdbb9b171960f8"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/RoutinePanel.tsx": {
+    "mtime": 1781879311.8474085,
+    "hash": "d26d08a6de984e412fef047cd47a7eba"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/components/FavoriteButton.tsx": {
+    "mtime": 1782558720.7412896,
+    "hash": "f58c1d97568e0eb5e260f7dc29c2fe61"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/hooks/useCardViewMode.ts": {
+    "mtime": 1782490440.6397169,
+    "hash": "305a8ffcdca5599f7b51bddb019b1550"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/hooks/useAuth.tsx": {
+    "mtime": 1782709305.382954,
+    "hash": "a33116e290d6079925491b6fd0115a4c"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/hooks/useTheme.tsx": {
+    "mtime": 1778574414.7796688,
+    "hash": "f14d379216dafd6297fa1049ef4cf137"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/hooks/usePointerReorder.ts": {
+    "mtime": 1782225639.4399884,
+    "hash": "4605ca2f3acba305b503ec4d129dbcb6"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/lib/errors.ts": {
+    "mtime": 1782709426.491713,
+    "hash": "e64842ed1ccce51307e18d6dbce247ab"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/lib/utils.ts": {
+    "mtime": 1779174407.7178066,
+    "hash": "1efcf014653b4baa4035af302346b04f"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/lib/api.ts": {
+    "mtime": 1782709426.3818758,
+    "hash": "24df33cfde65434f144c9bb255324e01"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/lib/db.ts": {
+    "mtime": 1782709305.620588,
+    "hash": "c8a9ea1006e720fe9902d183d51ec711"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/pages/LoginPage.tsx": {
+    "mtime": 1782709305.7215693,
+    "hash": "fc3267f83638c1c362e15ccb4e2c76d0"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/pages/MyPage.tsx": {
+    "mtime": 1782709359.3928897,
+    "hash": "e70e97f6d1fe916eb10bfd5ac33ea45c"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/pages/CalendarPage.tsx": {
+    "mtime": 1782227489.8504298,
+    "hash": "d6716353ba9e0b123346ed153e414c7d"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/pages/SignupPage.tsx": {
+    "mtime": 1782709465.3332765,
+    "hash": "20b7f02d24592037aa9fe8c00988f460"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/pages/LessonPage.tsx": {
+    "mtime": 1782559396.650474,
+    "hash": "a7115b79bfa9b7d05f91a0b33d314f26"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/pages/ClassesPage.tsx": {
+    "mtime": 1782557867.0820968,
+    "hash": "dbde7216deffffc44d8d897cb1f7abd5"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/src/pages/PlayerPage.tsx": {
+    "mtime": 1782567311.707374,
+    "hash": "edf20a980a4100ca87a5d99f17a8f90c"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/index.html": {
+    "mtime": 1781878546.9436297,
+    "hash": "54f480e5e3646b3ff9affc0c4a7c742b"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/SECURITY_CHECKLIST.md": {
+    "mtime": 1779176850.937438,
+    "hash": "a2e466fb3dbe95ba4cf9aac9729cb0b2"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/HOSTINGER_DEPLOY.md": {
+    "mtime": 1782712088.257514,
+    "hash": "e620ff954b017bb68050f2c6da539f17"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/AGENTS.md": {
+    "mtime": 1782488716.1155345,
+    "hash": "91a06f6901964682fbadc32c9eab27eb"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/img/icongraphic.png": {
+    "mtime": 1778571595.6125097,
+    "hash": "24a1c2ae4cd2e64c3e5a4011e0335d72"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/public/vite.svg": {
+    "mtime": 1778549711.687106,
+    "hash": "b9370b9965c30e09bec15ba7d4938771"
+  },
+  "/Users/lifewind/Space/CODE/_Vibe/StudyPlay/public/favicon.png": {
+    "mtime": 1778571776.5220625,
+    "hash": "24a1c2ae4cd2e64c3e5a4011e0335d72"
+  }
+}
