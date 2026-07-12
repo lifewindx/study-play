@@ -24,6 +24,7 @@ interface VideoPlayerProps {
 
 export interface VideoPlayerHandle {
   playSegment: (start: number, end: number, gap: number) => void;
+  resumeSegment: (start: number, end: number, gap: number) => void;
   pause: () => void;
   seekTo: (seconds: number) => void;
 }
@@ -284,6 +285,25 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       scheduleLoop();
       startPolling();
     },
+    resumeSegment(start, end, gap) {
+      playbackIntentRef.current = true;
+      startTimeRef.current = start;
+      endTimeRef.current = end;
+      loopGapRef.current = gap;
+      const p = playerRef.current;
+      if (!p || videoType !== "youtube") return;
+      let currentTime = lastKnownTimeRef.current;
+      try { currentTime = p.getCurrentTime(); } catch {}
+      if (currentTime < start || (end > start && currentTime >= end)) {
+        currentTime = start;
+        p.seekTo(start, true);
+      }
+      lastKnownTimeRef.current = currentTime;
+      forceHighQuality();
+      p.playVideo();
+      scheduleLoop();
+      startPolling();
+    },
     pause() {
       playbackIntentRef.current = false;
       const p = playerRef.current;
@@ -410,8 +430,6 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     if (!p || videoType !== "youtube") return;
     if (isPlaying) {
       playbackIntentRef.current = true;
-      lastKnownTimeRef.current = startTime;
-      if (startTime > 0) p.seekTo(startTime, true);
       p.playVideo();
       scheduleLoop();
       startPolling();
@@ -427,8 +445,6 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     const p = playerRef.current;
     if (!p || videoType !== "youtube" || !playCommand) return;
     playbackIntentRef.current = true;
-    lastKnownTimeRef.current = startTime;
-    if (startTime > 0) p.seekTo(startTime, true);
     p.playVideo();
     scheduleLoop();
     startPolling();

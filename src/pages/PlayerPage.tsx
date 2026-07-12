@@ -269,8 +269,8 @@ export function PlayerPage() {
       if (!activeSegment) {
         setActiveSegment(segment);
       }
-      videoRef.current?.playSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
-      splitVideoRef.current?.playSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
+      videoRef.current?.resumeSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
+      splitVideoRef.current?.resumeSegment(segment.start_time, getSegmentEndTime(segment), segment.loop_gap);
       await startStudySession(segment);
       setPlayCommand((value) => value + 1);
     } else {
