@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { RoutineItem } from "../types";
 import { deleteRoutineCompletion, ensureRoutineItems, getDb, recordRoutineCompletion } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
-import { CheckIcon, PlusIcon, TrashIcon, XIcon } from "./Icons";
+import { PlusIcon, XIcon } from "./Icons";
 
 const REORDER_SCOPE = "routine-items";
 
@@ -178,7 +178,7 @@ export function RoutinePanel() {
 
   return (
     <aside className="routine-panel">
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-0.5 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
             Routine
@@ -189,11 +189,11 @@ export function RoutinePanel() {
         </div>
         <button
           type="button"
-          className="icon-button h-7 w-7"
+          className="icon-button routine-header-button h-6 w-6"
           onClick={() => setIsAdding((value) => !value)}
           aria-label={isAdding ? "Close routine form" : "Add routine"}
         >
-          {isAdding ? <XIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
+          {isAdding ? <XIcon className="h-3 w-3" /> : <PlusIcon className="h-3 w-3" />}
         </button>
       </div>
 
@@ -214,7 +214,7 @@ export function RoutinePanel() {
             maxLength={80}
             autoFocus
           />
-          <button type="submit" className="btn-primary px-2 py-1 text-xs">
+          <button type="submit" className="btn-primary routine-add-button w-1/3 justify-self-end px-2 text-xs">
             Add
           </button>
         </form>
@@ -226,7 +226,7 @@ export function RoutinePanel() {
         </div>
       )}
 
-      <div className="space-y-1.5">
+      <div className="space-y-0.5">
         {items.map((item) => {
           const isDone = Boolean(item.completed_at);
           const isEditing = editingItemId === item.id;
@@ -246,8 +246,9 @@ export function RoutinePanel() {
                 className={`routine-check ${isDone ? "routine-check-done" : ""}`}
                 onClick={() => handleToggle(item)}
                 aria-label={isDone ? "Mark routine incomplete" : "Mark routine complete"}
+                aria-pressed={isDone}
               >
-                {isDone && <CheckIcon className="h-3.5 w-3.5" />}
+                {isDone && <span className="routine-check-dot" />}
               </button>
               {isEditing ? (
                 <input
@@ -280,7 +281,7 @@ export function RoutinePanel() {
                 onClick={() => handleDelete(item.id)}
                 aria-label="Delete routine"
               >
-                <TrashIcon className="h-3.5 w-3.5" />
+                <XIcon className="h-3 w-3 opacity-25" />
               </button>
             </div>
           );

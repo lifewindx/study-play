@@ -332,6 +332,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     if (videoType !== "youtube" || !videoId) return;
     const host = hostRef.current;
     if (!host) return;
+    let durationTimer: number | null = null;
 
     if (playerRef.current) {
       playerRef.current.destroy();
@@ -367,8 +368,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 else player.unMute();
               } catch {}
               emitDuration();
-              window.setTimeout(emitDuration, 500);
-              window.setTimeout(emitDuration, 1500);
+              durationTimer = window.setInterval(() => {
+                emitDuration();
+                if (lastKnownDurationRef.current > 0 && durationTimer !== null) {
+                  window.clearInterval(durationTimer);
+                  durationTimer = null;
+                }
+              }, 500);
               if (isPlayingRef.current) {
                 if (startTimeRef.current > 0) player.seekTo(startTimeRef.current, true);
                 player.playVideo();
@@ -405,6 +411,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     });
 
     return () => {
+      if (durationTimer !== null) window.clearInterval(durationTimer);
       stopPolling();
       clearLoopTimer();
       if (gapTimerRef.current) clearTimeout(gapTimerRef.current);

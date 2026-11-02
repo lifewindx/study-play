@@ -4,7 +4,7 @@ import type { Class, Lesson } from "../types";
 import { ensureAllSegmentsForLessons, getDb } from "../lib/db";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { getCardGridClassName, useClassLessonViewSettings } from "../hooks/useCardViewMode";
-import { ArrowLeftIcon, HeartIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, Trash2Icon } from "../components/Icons";
+import { ArrowLeftIcon, HeartIcon, ImageIcon, PencilIcon, PlayIcon, PlusIcon, SearchIcon, Trash2Icon, XIcon } from "../components/Icons";
 import { CardViewToggle } from "../components/CardViewToggle";
 import { DifficultyFilterMenu } from "../components/DifficultyFilterMenu";
 import { DifficultyStars } from "../components/DifficultyRating";
@@ -302,23 +302,19 @@ export function LessonPage() {
 
   return (
     <div className="page-shell">
-      <div
-        className="mb-4 flex flex-wrap items-center gap-3 border-b pb-4 lg:flex-nowrap"
-        style={{ borderColor: "var(--border-color)" }}
-      >
-        <nav className="flex min-w-0 flex-1 items-center gap-1.5 text-sm" aria-label="Breadcrumb">
+      <div className="lesson-toolbar mb-4 flex flex-wrap items-center gap-2 lg:flex-nowrap">
+        <nav className="flex min-w-0 flex-1 items-center gap-1 text-sm" aria-label="Breadcrumb">
           <button
             type="button"
             onClick={() => navigate("/classes")}
-            className="icon-button h-8 w-8 shrink-0 border"
-            style={{ borderColor: "var(--border-color)" }}
+            className="icon-button h-8 w-8 shrink-0"
             aria-label="이전"
             title="이전"
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </button>
           <h1
-            className="min-w-0 truncate text-xl font-semibold sm:text-2xl"
+            className="min-w-0 truncate text-lg font-semibold"
             style={{ color: "var(--text-primary)" }}
             title={cls.title}
           >
@@ -333,25 +329,31 @@ export function LessonPage() {
             <PencilIcon className="h-3.5 w-3.5" />
           </button>
         </nav>
-        <div className="relative order-3 w-full lg:order-none lg:w-[19.2rem] lg:shrink-0">
+        <div className="relative order-3 w-full lg:order-none lg:w-64 lg:shrink-0">
           <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="input-field h-10 w-full pl-9 pr-3 placeholder:opacity-40"
+            className="input-field lesson-search h-10 w-full pl-9 pr-9 placeholder:opacity-40"
             placeholder="레슨, 채널, YouTube 제목, 메모 검색"
             aria-label="레슨 검색"
           />
+          {searchQuery && (
+            <button type="button" onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-[var(--text-muted)] opacity-60 hover:opacity-100" aria-label="검색어 지우기">
+              <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </button>
+          )}
         </div>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <DifficultyFilterMenu value={difficultyFilter} onChange={changeDifficultyFilter} />
           <button
             type="button"
             onClick={() => changeShowFavoritesOnly(!showFavoritesOnly)}
             className={`icon-button h-10 w-10 ${showFavoritesOnly ? "icon-button-active" : ""}`}
             style={{
-              color: showFavoritesOnly ? "var(--favorite)" : undefined,
-              backgroundColor: showFavoritesOnly ? "var(--favorite-soft)" : "var(--surface-soft)",
+              color: showFavoritesOnly ? "var(--toolbar-accent)" : undefined,
+              backgroundColor: "transparent",
             }}
             aria-label="즐겨찾기만 보기"
             aria-pressed={showFavoritesOnly}
@@ -359,14 +361,13 @@ export function LessonPage() {
           >
             <HeartIcon className="h-4 w-4" style={{ fill: showFavoritesOnly ? "currentColor" : "none" }} />
           </button>
-          <DifficultyFilterMenu value={difficultyFilter} onChange={changeDifficultyFilter} />
           <button
             type="button"
             onClick={toggleShowLessonThumbnails}
             className="icon-button h-10 w-10"
             style={{
-              color: showLessonThumbnails ? "var(--accent)" : undefined,
-              backgroundColor: showLessonThumbnails ? "var(--accent-soft)" : "var(--surface-soft)",
+              color: showLessonThumbnails ? "var(--toolbar-accent)" : undefined,
+              backgroundColor: "transparent",
             }}
             aria-label="썸네일 표시"
             aria-pressed={showLessonThumbnails}
@@ -403,10 +404,10 @@ export function LessonPage() {
         <ModalBackdrop onClose={closeClassForm}>
           <div className="modal-card">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--accent)" }}>
                 Edit class
               </h2>
-              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
                 Update the class name and note.
               </p>
             </div>

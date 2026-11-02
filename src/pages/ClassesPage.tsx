@@ -98,11 +98,14 @@ function closeForm() {
 
   return (
     <div className="page-shell">
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
-            {classes.length} Classes
+      <div className="page-heading mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="sr-only">
+            Your classes
           </h1>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {classes.length} {classes.length === 1 ? "class" : "classes"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <CardViewToggle value={viewMode} onChange={changeViewMode} />
@@ -121,10 +124,10 @@ function closeForm() {
         <ModalBackdrop onClose={closeForm}>
           <div className="modal-card">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--accent)" }}>
                 {editingClassId !== null ? "Edit class" : "New class"}
               </h2>
-              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
                 Name the practice group and add a short note if needed.
               </p>
             </div>
@@ -165,13 +168,12 @@ function closeForm() {
             data-reorder-scope="classes"
             onClick={() => navigate(`/classes/${cls.id}`)}
             onPointerDown={(e) => startReorderDrag(cls.id, e)}
-            className={`card group flex cursor-pointer items-center gap-3 rounded-xl border-l-[3px] py-3 pl-6 pr-3 ${
+            className={`card class-card group flex cursor-pointer items-center gap-3 px-5 py-4 ${
               draggingClassId === cls.id ? "opacity-50" : ""
             }`}
-            style={{ borderLeftColor: "var(--accent)" }}
           >
             <div className="flex-1 min-w-0">
-              <h3 className="truncate text-lg font-semibold" style={{ color: "var(--class-title)" }}>
+              <h3 className="truncate text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
                 {cls.title}
               </h3>
               {cls.description && (
@@ -181,8 +183,9 @@ function closeForm() {
               )}
             </div>
             <span
-              className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium"
+              className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full px-1 text-xs font-medium"
               style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-tertiary)" }}
+              aria-label={`${lessonCountByClassId[cls.id] ?? 0} lessons`}
             >
               {lessonCountByClassId[cls.id] ?? 0}
             </span>

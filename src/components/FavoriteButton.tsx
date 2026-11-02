@@ -18,8 +18,8 @@ export function FavoriteButton({ active, onChange, small = false, bare = false }
       }}
       className={`icon-button shrink-0 ${small ? "h-6 w-6" : "h-10 w-10"} ${bare ? "justify-end hover:!bg-transparent" : ""}`}
       style={{
-        color: active ? "var(--favorite)" : "var(--text-muted)",
-        backgroundColor: !bare && active ? "var(--favorite-soft)" : undefined,
+        color: active ? "var(--toolbar-accent)" : "var(--text-muted)",
+        backgroundColor: "transparent",
       }}
       aria-label={active ? "즐겨찾기 해제" : "즐겨찾기 추가"}
       aria-pressed={active}

@@ -119,7 +119,7 @@ export function DifficultyRating({ value, onChange }: DifficultyRatingProps) {
   return (
     <div
       ref={containerRef}
-      className="inline-flex h-9 select-none items-center gap-0.5 rounded-xl px-1.5 transition-colors hover:bg-[var(--bg-tertiary)]"
+      className="inline-flex h-9 select-none items-center gap-0 px-1 transition-colors"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
@@ -134,9 +134,9 @@ export function DifficultyRating({ value, onChange }: DifficultyRatingProps) {
           onPointerDown={(event) => handlePointerDown(star, event)}
           onPointerEnter={() => handlePointerEnter(star)}
           onClick={() => handleClick(star)}
-          className="px-0.5 text-base leading-none transition-colors"
+          className="text-base leading-none transition-colors"
           style={{
-            color: star <= displayValue ? "var(--warning)" : "var(--text-muted)",
+            color: star <= displayValue ? "var(--toolbar-accent)" : "var(--rating-inactive)",
           }}
           aria-label={`난이도 ${star}별`}
           aria-pressed={rating === star}

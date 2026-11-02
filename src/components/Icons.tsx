@@ -22,8 +22,8 @@ function IconBase({ children, ...props }: IconProps) {
 export function PencilIcon(props: IconProps) {
   return (
     <IconBase {...props}>
-      <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
-      <path d="m14 7 3 3" />
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z" />
     </IconBase>
   );
 }
@@ -32,10 +32,9 @@ export function TrashIcon(props: IconProps) {
   return (
     <IconBase {...props}>
       <path d="M4 7h16" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-      <path d="M6 7l1 13h10l1-13" />
-      <path d="M9 7V4h6v3" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M6 7v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7" />
+      <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
     </IconBase>
   );
 }

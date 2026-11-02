@@ -1,8 +1,8 @@
 import type { Segment } from "../types";
-import { formatTimeMs } from "../lib/utils";
+import { TimeDisplay } from "./TimeDisplay";
 import { usePointerReorder } from "../hooks/usePointerReorder";
 import { SegmentEditor } from "./SegmentEditor";
-import { PencilIcon, TrashIcon } from "./Icons";
+import { PencilIcon, XIcon } from "./Icons";
 
 interface SegmentListProps {
   segments: Segment[];
@@ -19,6 +19,9 @@ interface SegmentListProps {
   onCancelEdit: () => void;
   onDelete: (id: number) => void;
   onReorder?: (draggedId: number, targetId: number, placement: "before" | "after") => void;
+  onPreviewChange?: (start: number, end: number) => void;
+  draggedTimes?: { start: number; end: number } | null;
+  locked?: boolean;
 }
 
 export function SegmentList({
@@ -31,6 +34,9 @@ export function SegmentList({
   onCancelEdit,
   onDelete,
   onReorder,
+  onPreviewChange,
+  draggedTimes,
+  locked = false,
 }: SegmentListProps) {
   const { draggingId: draggingSegmentId, startReorderDrag } = usePointerReorder((draggedId, targetId, placement) => {
     onReorder?.(draggedId, targetId, placement);
@@ -51,18 +57,33 @@ export function SegmentList({
         const isEditing = seg.id === editingSegmentId;
         const isDefaultAllSegment = seg.label === "All" && seg.start_time === 0;
 
+        if (isEditing) {
+          return (
+            <SegmentEditor
+              key={seg.id}
+              segment={seg}
+              initialLabel={seg.label || `S${segments.slice(0, idx + 1).filter((item) => !(item.label === "All" && item.start_time === 0)).length}`}
+              onPreviewChange={onPreviewChange}
+              draggedTimes={draggedTimes}
+              onSave={onSaveEdit}
+              onCancel={onCancelEdit}
+            />
+          );
+        }
+
         return (
           <div key={seg.id}>
             <div
-              data-reorder-id={isEditing ? undefined : seg.id}
-              data-reorder-scope={isEditing ? undefined : "segments"}
-              onClick={() => { if (!isEditing) onSelect(seg); }}
+              data-reorder-id={locked ? undefined : seg.id}
+              data-reorder-scope={locked ? undefined : "segments"}
+              onClick={() => { if (!locked) onSelect(seg); }}
               onPointerDown={(e) => {
-                if (!isEditing) startReorderDrag(seg.id, e);
+                if (!locked) startReorderDrag(seg.id, e);
               }}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
-                isActive && !isEditing ? "ring-2" : ""
-              } ${isEditing ? "rounded-b-none border-b-0" : ""} ${
+              aria-disabled={locked}
+              className={`relative flex min-h-12 items-center gap-3 border px-6 py-2 transition-colors ${locked ? "cursor-default opacity-50" : "cursor-pointer"} ${
+                isEditing ? "rounded-t-xl border-b-0" : "rounded-full"
+              } ${
                 draggingSegmentId === seg.id ? "opacity-50" : ""
               }`}
               style={{
@@ -71,31 +92,22 @@ export function SegmentList({
               }}
             >
               <div className="flex-1 min-w-0" onClick={(e) => { if (isEditing) e.stopPropagation(); }}>
-                <div className="flex items-center gap-2">
-                  <span className="rounded px-1.5 py-0.5 text-xs"
-                    style={{
-                      backgroundColor: isActive ? "var(--accent-soft)" : "var(--bg-tertiary)",
-                      color: isActive ? "var(--accent)" : "var(--text-secondary)",
-                    }}
-                  >
-                    {isDefaultAllSegment ? "Default" : `Segment ${idx + 1}`}
-                  </span>
-                  {seg.label && (
-                    <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                      {seg.label}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="truncate text-sm font-medium sm:max-w-[35%]" style={{ color: "var(--text-primary)" }}>
+                      {seg.label || `S${segments.slice(0, idx + 1).filter((item) => !(item.label === "All" && item.start_time === 0)).length}`}
                     </span>
-                  )}
-                </div>
-                <div className="text-xs mt-1 font-mono" style={{ color: "var(--text-secondary)" }}>
-                  {formatTimeMs(seg.start_time)} to {formatTimeMs(seg.end_time)}
+                <span className="text-xs font-mono sm:absolute sm:left-1/2 sm:-translate-x-1/2" style={{ color: "var(--text-secondary)" }}>
+                  <TimeDisplay seconds={seg.start_time} /> - <TimeDisplay seconds={seg.end_time} />
                   {seg.loop_gap > 0 && <span className="ml-2">gap: {seg.loop_gap}s</span>}
+                </span>
                 </div>
               </div>
 
-              <div className="flex shrink-0 gap-1">
+              <div className="segment-actions flex shrink-0 gap-0">
                 {!isDefaultAllSegment && (
                   <button
                     data-no-reorder
+                    disabled={locked}
                     onClick={(e) => { e.stopPropagation(); onEdit(seg); }}
                     className="icon-button"
                     style={{ color: isEditing ? "var(--accent)" : "var(--text-secondary)" }}
@@ -107,29 +119,18 @@ export function SegmentList({
                 {!isEditing && !isDefaultAllSegment && (
                   <button
                     data-no-reorder
+                    disabled={locked}
                     onClick={(e) => { e.stopPropagation(); onDelete(seg.id); }}
                     className="icon-button"
                     style={{ color: "var(--text-secondary)" }}
                     aria-label="Delete segment"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <XIcon className="h-4 w-4" />
                   </button>
                 )}
               </div>
             </div>
 
-            {isEditing && (
-              <div
-                className="border border-t-0 rounded-b-lg overflow-hidden"
-                style={{ borderColor: "var(--border-color)" }}
-              >
-                <SegmentEditor
-                  segment={seg}
-                  onSave={onSaveEdit}
-                  onCancel={onCancelEdit}
-                />
-              </div>
-            )}
           </div>
         );
       })}

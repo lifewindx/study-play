@@ -45,10 +45,10 @@ export function LessonFormModal({
     <ModalBackdrop onClose={onClose}>
       <div className="modal-card">
         <div className="mb-4">
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--accent)" }}>
             {mode === "edit" ? "Edit lesson" : "New lesson"}
           </h2>
-          <p className="mt-1 text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
             {mode === "edit"
               ? "Changing the link may shift segment timing."
               : "Add a YouTube link for focused loop practice."}

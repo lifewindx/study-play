@@ -8,8 +8,8 @@ import { SegmentEditor } from "../components/SegmentEditor";
 import { LessonFormModal } from "../components/LessonFormModal";
 import { DifficultyRating } from "../components/DifficultyRating";
 import { FavoriteButton } from "../components/FavoriteButton";
+import { TimeDisplay } from "../components/TimeDisplay";
 import {
-  ArrowLeftIcon,
   FlipIcon,
   FullscreenExitIcon,
   FullscreenIcon,
@@ -51,6 +51,22 @@ export function PlayerPage() {
   const [activeSegment, setActiveSegment] = useState<Segment | null>(null);
   const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
   const [showNewSegment, setShowNewSegment] = useState(false);
+  const [segmentPreview, setSegmentPreview] = useState<{ start: number; end: number } | null>(null);
+  const [draggedTimes, setDraggedTimes] = useState<{ start: number; end: number } | null>(null);
+  const handleSegmentPreview = useCallback((start: number, end: number) => setSegmentPreview({ start, end }), []);
+
+  function adjustSegmentBoundary(boundary: "start" | "end", time: number) {
+    if (!segmentPreview || videoDuration <= 0) return;
+    const value = Math.round(Math.max(0, Math.min(videoDuration, time)) * 100) / 100;
+    const next = boundary === "start"
+      ? { start: Math.min(value, Math.max(0, segmentPreview.end - 0.01)), end: segmentPreview.end }
+      : { start: segmentPreview.start, end: Math.max(value, Math.min(videoDuration, segmentPreview.start + 0.01)) };
+    setSegmentPreview(next);
+    setDraggedTimes(next);
+    if (isPlaying) void handlePlayPause();
+    videoRef.current?.seekTo(next[boundary]);
+    splitVideoRef.current?.seekTo(next[boundary]);
+  }
   const [isSavingSegment, setIsSavingSegment] = useState(false);
   const [segmentError, setSegmentError] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -311,6 +327,10 @@ export function PlayerPage() {
 
     try {
       const db = await getDb();
+      const usedLabels = new Set(segments.filter((segment) => segment.id !== editingSegmentId).map((segment) => segment.label.trim().toLowerCase()));
+      let nextNumber = 1;
+      while (usedLabels.has(`s${nextNumber}`)) nextNumber += 1;
+      const segmentLabel = data.label.trim() || `S${nextNumber}`;
       if (editingSegmentId !== null) {
         const editingSegment = segments.find((segment) => segment.id === editingSegmentId);
         if (editingSegment && isAllPlaceholderSegment(editingSegment)) {
@@ -320,8 +340,11 @@ export function PlayerPage() {
         await db.execute(
           `UPDATE segments SET label = $1, start_time = $2, end_time = $3, loop_gap = $4,
            updated_at = datetime('now','localtime') WHERE id = $5`,
-          [data.label, data.start_time, data.end_time, data.loop_gap, editingSegmentId]
+          [segmentLabel, data.start_time, data.end_time, data.loop_gap, editingSegmentId]
         );
+        if (editingSegment) {
+          setActiveSegment({ ...editingSegment, label: segmentLabel, start_time: data.start_time, end_time: data.end_time, loop_gap: data.loop_gap });
+        }
         setEditingSegmentId(null);
       } else {
         const nextSortOrder =
@@ -331,7 +354,7 @@ export function PlayerPage() {
         await db.execute(
           `INSERT INTO segments (lesson_id, label, start_time, end_time, loop_gap, sort_order)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [Number(lessonId), data.label, data.start_time, data.end_time, data.loop_gap, nextSortOrder]
+          [Number(lessonId), segmentLabel, data.start_time, data.end_time, data.loop_gap, nextSortOrder]
         );
         setShowNewSegment(false);
       }
@@ -608,31 +631,23 @@ export function PlayerPage() {
   return (
     <div className={isFullscreen ? "fullscreen-player" : "page-shell space-y-2 sm:space-y-3"}>
       {!isFullscreen && (
-        <div className="flex items-start justify-between gap-3 text-sm" style={{ color: "var(--text-muted)" }}>
+        <div className="player-heading flex items-center justify-between gap-2 text-sm" style={{ color: "var(--text-muted)" }}>
           <div className="flex min-w-0 items-center gap-1.5">
             <button
-              onClick={() => navigate("/classes")}
-              className="icon-button shrink-0 border"
-              style={{ borderColor: "var(--border-color)" }}
-              aria-label="이전"
-              title="이전"
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-            </button>
-            <button
               onClick={() => navigate(`/classes/${lesson.class_id}`)}
-              className="hidden sm:block rounded-xl px-2 py-1 transition-colors hover:bg-[var(--bg-tertiary)] truncate max-w-[120px]"
+              className="max-w-[120px] truncate rounded-full bg-[var(--bg-secondary)] px-3 py-1 text-xs transition-colors hover:bg-[var(--bg-tertiary)]"
             >
               {classTitle || "Class"}
             </button>
-            <span className="hidden sm:inline">/</span>
-            <h1 className="ml-1 truncate text-lg font-semibold sm:text-2xl" style={{ color: "var(--text-primary)" }}>
+            <h1 className="ml-1 truncate text-base font-semibold sm:text-lg" style={{ color: "var(--text-primary)" }}>
               {lesson.title}
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <FavoriteButton active={Boolean(lesson.is_favorite)} onChange={handleFavoriteChange} />
             <DifficultyRating value={lesson.difficulty ?? 0} onChange={handleDifficultyChange} />
+            <button type="button" onClick={openLessonEditor} className="icon-button" aria-label="Edit lesson" title="Edit lesson"><PencilIcon className="h-4 w-4" /></button>
+            <button type="button" onClick={handleDeleteLesson} className="icon-button" aria-label="Delete lesson" title="Delete lesson"><TrashIcon className="h-4 w-4" /></button>
           </div>
         </div>
       )}
@@ -642,7 +657,7 @@ export function PlayerPage() {
         className={isFullscreen ? "fullscreen-video-container" : undefined}
       >
         <div
-          className={isFullscreen ? "fullscreen-video" : "overflow-hidden rounded-xl border"}
+          className={isFullscreen ? "fullscreen-video" : "overflow-hidden border"}
           style={!isFullscreen ? { borderColor: "var(--border-color)" } : undefined}
         >
           <div ref={splitPreviewRef} className={isFullscreen ? "relative h-full w-full" : "relative aspect-video"}>
@@ -783,8 +798,42 @@ export function PlayerPage() {
                 <FullscreenExitIcon className="h-5 w-5" />
               </button>
             )}
+            {!isFullscreen && (showNewSegment || editingSegmentId !== null) && segmentPreview && (
+              <div className="absolute inset-x-0 bottom-0 z-30 h-5 bg-black/60" aria-label="영상 전체 구간 선택">
+                {videoDuration > 0 && <div className="absolute top-1/2 h-1 -translate-y-1/2 bg-[var(--accent)]" style={{ left: `${Math.max(0, Math.min(100, segmentPreview.start / videoDuration * 100))}%`, width: `${Math.max(0, Math.min(videoDuration, segmentPreview.end) - Math.max(0, segmentPreview.start)) / videoDuration * 100}%` }} />}
+                {(["start", "end"] as const).map((boundary) => (
+                  <button
+                    key={boundary}
+                    type="button"
+                    className="absolute top-0 h-5 w-5 -translate-x-1/2 cursor-ew-resize touch-none"
+                    style={{ left: videoDuration > 0 ? `${Math.max(0, Math.min(100, segmentPreview[boundary] / videoDuration * 100))}%` : boundary === "start" ? "0%" : "100%" }}
+                    disabled={videoDuration <= 0}
+                    aria-label={boundary === "start" ? "구간 시작 시간" : "구간 종료 시간"}
+                    role="slider"
+                    aria-valuemin={0}
+                    aria-valuemax={videoDuration}
+                    aria-valuenow={Math.max(0, Math.min(videoDuration, segmentPreview[boundary]))}
+                    aria-valuetext={formatTimeShort(segmentPreview[boundary])}
+                    onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); }}
+                    onPointerMove={(event) => {
+                      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                      const rect = event.currentTarget.parentElement?.getBoundingClientRect();
+                      if (rect && rect.width > 0) adjustSegmentBoundary(boundary, (event.clientX - rect.left) / rect.width * videoDuration);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                      event.preventDefault();
+                      adjustSegmentBoundary(boundary, segmentPreview[boundary] + (event.key === "ArrowRight" ? 1 : -1));
+                    }}
+                  >
+                    <span className="mx-auto block h-4 w-1.5 rounded-full bg-[var(--accent)]" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {!isFullscreen && (
+            <div>
             <div
               className={`relative h-4 touch-none ${activeSegment ? "cursor-pointer" : ""}`}
               onPointerDown={handleProgressPointerDown}
@@ -824,6 +873,7 @@ export function PlayerPage() {
                 />
               </div>
             </div>
+            </div>
           )}
         </div>
 
@@ -838,7 +888,7 @@ export function PlayerPage() {
                         {activeSegment.label || `Seg ${segments.indexOf(activeSegment) + 1}`}
                       </div>
                       <div className="text-xs font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        {formatTimeShort(currentTime)} / {formatTimeShort(activeSegmentEndTime)}
+                        <TimeDisplay seconds={currentTime} /> - <TimeDisplay seconds={activeSegmentEndTime} />
                       </div>
                     </div>
                   ) : (
@@ -859,11 +909,11 @@ export function PlayerPage() {
                   </button>
 
                   <div className="control-group">
-                    <button onClick={() => handleSpeedChange(-0.1)} className="control-chip px-2 sm:px-3" aria-label="Slower">−</button>
-                    <span className="min-w-[2.4rem] text-center text-xs sm:text-sm font-mono" style={{ color: "var(--text-primary)" }}>
+                    <button onClick={() => handleSpeedChange(-0.1)} className="control-chip speed-step px-2 sm:px-3" aria-label="Slower">−</button>
+                    <span className="speed-value text-center text-xs sm:text-sm font-mono" style={{ color: "var(--text-primary)" }}>
                       {speed}x
                     </span>
-                    <button onClick={() => handleSpeedChange(0.1)} className="control-chip px-2 sm:px-3" aria-label="Faster">+</button>
+                    <button onClick={() => handleSpeedChange(0.1)} className="control-chip speed-step px-2 sm:px-3" aria-label="Faster">+</button>
                     <button onClick={() => setSpeed(1)} className="icon-button h-8 w-8" aria-label="Reset speed">
                       <GaugeIcon className="h-3.5 w-3.5" />
                     </button>
@@ -877,8 +927,8 @@ export function PlayerPage() {
                       onClick={() => setFlipH(!flipH)}
                       className="control-chip"
                       style={{
-                        backgroundColor: flipH ? "var(--accent)" : "var(--bg-tertiary)",
-                        color: flipH ? "var(--accent-contrast)" : "var(--text-primary)",
+                        backgroundColor: flipH ? "var(--accent-soft)" : "transparent",
+                        color: flipH ? "var(--accent)" : "var(--text-secondary)",
                       }}
                       aria-label="Flip horizontally"
                     >
@@ -888,8 +938,8 @@ export function PlayerPage() {
                       onClick={() => setFlipV(!flipV)}
                       className="control-chip"
                       style={{
-                        backgroundColor: flipV ? "var(--accent)" : "var(--bg-tertiary)",
-                        color: flipV ? "var(--accent-contrast)" : "var(--text-primary)",
+                        backgroundColor: flipV ? "var(--accent-soft)" : "transparent",
+                        color: flipV ? "var(--accent)" : "var(--text-secondary)",
                       }}
                       aria-label="Flip vertically"
                     >
@@ -899,8 +949,8 @@ export function PlayerPage() {
                       onClick={startSplitEditing}
                       className="control-chip"
                       style={{
-                        backgroundColor: splitEnabled ? "var(--accent)" : "var(--bg-tertiary)",
-                        color: splitEnabled ? "var(--accent-contrast)" : "var(--text-primary)",
+                        backgroundColor: splitEnabled ? "var(--accent-soft)" : "transparent",
+                        color: splitEnabled ? "var(--accent)" : "var(--text-secondary)",
                       }}
                       aria-label="Split video"
                       title="Split video"
@@ -922,19 +972,22 @@ export function PlayerPage() {
 
       {!isFullscreen && (
         <>
-          <div className="border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
-            <div className="px-4 sm:px-6">
-              <div className="mb-3 flex items-center justify-between">
+          <div className="pt-3">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
               <h2 className="section-title">Segments</h2>
               <button
                 onClick={() => {
                   setShowNewSegment(true);
+                  setDraggedTimes(null);
                   setEditingSegmentId(null);
                   setSegmentError("");
                 }}
-                className="btn-primary text-sm"
+                className="segment-add-trigger icon-button h-6 w-6"
+                aria-label="Add segment"
+                title="Add segment"
               >
-                + Segment
+                <span aria-hidden="true" className="text-lg leading-none">+</span>
               </button>
               </div>
 
@@ -945,13 +998,15 @@ export function PlayerPage() {
               )}
 
               {showNewSegment && (
-                <div className="mb-3">
+                <div className="mb-6">
                   <SegmentEditor
                     key={`${newSegmentStartTime}-${newSegmentEndTime}`}
                     initialStartTime={newSegmentStartTime}
                     initialEndTime={newSegmentEndTime}
                     isSaving={isSavingSegment}
                     onSave={handleSaveSegment}
+                    onPreviewChange={handleSegmentPreview}
+                    draggedTimes={draggedTimes}
                     onCancel={() => {
                       setShowNewSegment(false);
                       setSegmentError("");
@@ -962,31 +1017,30 @@ export function PlayerPage() {
 
               <SegmentList
                 segments={segments}
-                activeSegmentId={activeSegment?.id ?? null}
+                activeSegmentId={showNewSegment || editingSegmentId !== null ? null : activeSegment?.id ?? null}
                 editingSegmentId={editingSegmentId}
                 onSelect={handleSelectSegment}
                 onEdit={(seg) => {
+                  setDraggedTimes(null);
+                  setSegmentPreview({ start: seg.start_time, end: seg.end_time });
                   setEditingSegmentId(seg.id);
                   setShowNewSegment(false);
                 }}
                 onSaveEdit={handleSaveSegment}
-                onCancelEdit={() => setEditingSegmentId(null)}
+                onCancelEdit={() => {
+                  const editedSegment = segments.find((segment) => segment.id === editingSegmentId);
+                  if (editedSegment) setActiveSegment(editedSegment);
+                  setEditingSegmentId(null);
+                }}
                 onDelete={handleDeleteSegment}
                 onReorder={handleReorderSegment}
+                onPreviewChange={handleSegmentPreview}
+                draggedTimes={draggedTimes}
+                locked={showNewSegment || editingSegmentId !== null}
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 border-t pt-4 sm:pt-5" style={{ borderColor: "var(--border-color)" }}>
-            <button onClick={openLessonEditor} className="btn-ghost gap-1.5 text-sm">
-              <PencilIcon className="h-4 w-4" />
-              Edit
-            </button>
-            <button onClick={handleDeleteLesson} className="btn-ghost gap-1.5 text-sm" style={{ color: "var(--danger, #ef4444)" }}>
-              <TrashIcon className="h-4 w-4" />
-              Delete
-            </button>
-          </div>
         </>
       )}
 

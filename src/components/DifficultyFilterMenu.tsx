@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { DifficultyFilter } from "../hooks/useCardViewMode";
-import { CheckIcon, DifficultySortIcon } from "./Icons";
+import { CheckIcon } from "./Icons";
 
 interface DifficultyFilterMenuProps {
   value: DifficultyFilter;
@@ -42,27 +42,23 @@ export function DifficultyFilterMenu({ value, onChange }: DifficultyFilterMenuPr
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className={`inline-flex h-10 min-w-[6.75rem] items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors ${
-          open ? "icon-button-active" : ""
-        }`}
-        style={!open ? { backgroundColor: "var(--surface-soft)", color: "var(--text-secondary)" } : undefined}
+        className="inline-flex h-9 items-center justify-center gap-0 rounded-lg px-2 text-sm font-medium transition-colors"
+        style={{ backgroundColor: "transparent", color: open ? "var(--toolbar-accent)" : "var(--text-muted)" }}
         aria-label="난이도 필터"
         aria-expanded={open}
         title="난이도 필터"
       >
-        <DifficultySortIcon
-          className="h-4 w-4 shrink-0"
-          style={{ color: value !== "all" ? "var(--warning)" : undefined }}
-        />
-        <span style={{ color: value === "all" ? "inherit" : "var(--warning)" }}>
-          {value === "all" ? "전체" : "★".repeat(value)}
-        </span>
+        {Array.from({ length: value === "all" ? 1 : value }, (_, index) => (
+          <svg key={index} className="h-4 w-4" viewBox="0 0 24 24" fill={value === "all" ? "none" : "currentColor"} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true" style={{ color: value !== "all" ? "var(--toolbar-accent)" : undefined }}>
+            <path d="m12 3 2.8 5.7 6.3.9-4.5 4.4 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.5-4.4 6.3-.9L12 3Z" />
+          </svg>
+        ))}
       </button>
 
       {open && (
         <div
           className="view-mode-menu absolute right-0 top-full z-30 mt-2 w-44 overflow-hidden rounded-xl border p-1.5 shadow-2xl"
-          style={{ backgroundColor: "var(--surface-strong)", borderColor: "var(--border-color)" }}
+          style={{ backgroundColor: "var(--menu-bg)", borderColor: "var(--border-color)" }}
           role="menu"
           aria-label="난이도 선택"
         >
@@ -79,7 +75,6 @@ export function DifficultyFilterMenu({ value, onChange }: DifficultyFilterMenuPr
                 className="flex h-9 w-full items-center justify-between rounded-lg px-2.5 text-left text-sm transition-colors hover:bg-[var(--bg-tertiary)]"
                 style={{
                   color: option.value === "all" ? "var(--text-primary)" : "var(--warning)",
-                  backgroundColor: selected ? "var(--accent-soft)" : undefined,
                 }}
                 aria-pressed={selected}
                 role="menuitem"

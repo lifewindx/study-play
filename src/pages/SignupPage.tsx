@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { authApi } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { sanitizeError, validatePassword } from "../lib/errors";
+import { Footer } from "../components/Footer";
 
 export function SignupPage() {
   const { refresh } = useAuth();
@@ -36,8 +37,8 @@ export function SignupPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center">
+      <div className="auth-shell flex min-h-screen items-center justify-center px-5 py-10">
+        <div className="auth-card w-full max-w-sm text-center">
           <h1 className="mb-2 text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
             Account created
           </h1>
@@ -48,15 +49,16 @@ export function SignupPage() {
             Continue
           </Link>
         </div>
+        <Footer auth />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="auth-shell flex min-h-screen items-center justify-center px-5 py-10">
+      <div className="auth-card w-full max-w-sm">
         <h1 className="mb-2 text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          StudyPlay
+          LOOPIN
         </h1>
         <p className="mb-8 text-sm" style={{ color: "var(--text-muted)" }}>
           Create your account
@@ -65,6 +67,7 @@ export function SignupPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
+            aria-label="Email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -75,6 +78,7 @@ export function SignupPage() {
           />
           <input
             type="password"
+            aria-label="Password"
             placeholder="Password (8+ chars, special char)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -85,6 +89,7 @@ export function SignupPage() {
           />
           <input
             type="password"
+            aria-label="Confirm password"
             placeholder="Confirm password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -113,6 +118,7 @@ export function SignupPage() {
           </Link>
         </p>
       </div>
+      <Footer auth />
     </div>
   );
 }
