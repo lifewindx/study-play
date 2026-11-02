@@ -103,9 +103,6 @@ function closeForm() {
           <h1 className="sr-only">
             Your classes
           </h1>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {classes.length} {classes.length === 1 ? "class" : "classes"}
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <CardViewToggle value={viewMode} onChange={changeViewMode} />
@@ -177,7 +174,7 @@ function closeForm() {
                 {cls.title}
               </h3>
               {cls.description && (
-                <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
                   {cls.description}
                 </p>
               )}

@@ -174,17 +174,13 @@ export function RoutinePanel() {
   }
 
   const { draggingId, startReorderDrag } = usePointerReorder(handleReorder, REORDER_SCOPE);
-  const completedCount = items.filter((item) => item.completed_at).length;
 
   return (
     <aside className="routine-panel">
-      <div className="mb-0.5 flex items-center justify-between gap-2">
+      <div className="absolute -top-8 left-0 right-0 flex items-center justify-between gap-2 px-2.5">
         <div className="min-w-0">
-          <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+          <div className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
             Routine
-          </div>
-          <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-            {completedCount}/{items.length} done
           </div>
         </div>
         <button
@@ -193,7 +189,7 @@ export function RoutinePanel() {
           onClick={() => setIsAdding((value) => !value)}
           aria-label={isAdding ? "Close routine form" : "Add routine"}
         >
-          {isAdding ? <XIcon className="h-3 w-3" /> : <PlusIcon className="h-3 w-3" />}
+          {isAdding ? <XIcon className="h-3 w-3 opacity-60" /> : <PlusIcon className="h-3 w-3 opacity-60" />}
         </button>
       </div>
 

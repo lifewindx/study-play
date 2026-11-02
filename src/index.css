@@ -299,7 +299,7 @@
   }
 
   .routine-panel {
-    @apply absolute left-[calc(100%+1rem)] top-0 mt-[5.5rem] hidden w-44 rounded-xl border p-2.5;
+    @apply absolute left-[calc(100%-0.5rem)] top-0 mt-[5.5rem] hidden w-44 rounded-xl border p-2.5;
     background-color: var(--surface-soft);
     border-color: var(--border-color);
     box-shadow: 0 14px 32px rgba(17, 18, 20, 0.14);

@@ -10,10 +10,11 @@ export function AppHeader() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
         <NavLink
           to="/classes"
-          className="brand-mark truncate text-xl font-semibold"
+          className="brand-mark inline-flex min-w-0 items-center gap-2 text-xl font-semibold"
           style={{ color: "var(--text-primary)" }}
         >
-          LOOPIN
+          <img src="/appicon.png" alt="" className="h-7 w-7 shrink-0 rounded-md" />
+          <span className="truncate">LOOPIN</span>
         </NavLink>
 
         <nav className="header-nav flex items-center gap-1 sm:gap-2" aria-label="Main navigation">

@@ -798,14 +798,16 @@ export function PlayerPage() {
                 <FullscreenExitIcon className="h-5 w-5" />
               </button>
             )}
+          </div>
             {!isFullscreen && (showNewSegment || editingSegmentId !== null) && segmentPreview && (
-              <div className="absolute inset-x-0 bottom-0 z-30 h-5 bg-black/60" aria-label="영상 전체 구간 선택">
+              <div className="relative h-6 bg-[var(--bg-tertiary)]" aria-label="영상 전체 구간 선택">
+                <div className="absolute inset-y-0 left-3 right-3">
                 {videoDuration > 0 && <div className="absolute top-1/2 h-1 -translate-y-1/2 bg-[var(--accent)]" style={{ left: `${Math.max(0, Math.min(100, segmentPreview.start / videoDuration * 100))}%`, width: `${Math.max(0, Math.min(videoDuration, segmentPreview.end) - Math.max(0, segmentPreview.start)) / videoDuration * 100}%` }} />}
                 {(["start", "end"] as const).map((boundary) => (
                   <button
                     key={boundary}
                     type="button"
-                    className="absolute top-0 h-5 w-5 -translate-x-1/2 cursor-ew-resize touch-none"
+                    className="absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none"
                     style={{ left: videoDuration > 0 ? `${Math.max(0, Math.min(100, segmentPreview[boundary] / videoDuration * 100))}%` : boundary === "start" ? "0%" : "100%" }}
                     disabled={videoDuration <= 0}
                     aria-label={boundary === "start" ? "구간 시작 시간" : "구간 종료 시간"}
@@ -829,10 +831,11 @@ export function PlayerPage() {
                     <span className="mx-auto block h-4 w-1.5 rounded-full bg-[var(--accent)]" />
                   </button>
                 ))}
+                </div>
+                {videoDuration <= 0 && <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] text-[var(--text-muted)]">영상 길이를 불러오는 중</span>}
               </div>
             )}
-          </div>
-          {!isFullscreen && (
+          {!isFullscreen && !showNewSegment && editingSegmentId === null && (
             <div>
             <div
               className={`relative h-4 touch-none ${activeSegment ? "cursor-pointer" : ""}`}
@@ -851,7 +854,7 @@ export function PlayerPage() {
               aria-valuenow={currentTime}
             >
               <div
-                className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 overflow-hidden"
+                className="absolute inset-0 overflow-hidden"
                 style={{ backgroundColor: "var(--bg-tertiary)" }}
               >
                 <div
