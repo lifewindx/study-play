@@ -138,7 +138,7 @@ export async function executeForUser(userId, query, values = []) {
     params = [asNumber(values[0]), asNumber(values[1]), userId];
   } else if (sql.startsWith("UPDATE routine_items SET completed_at")) {
     statement = "UPDATE routine_items SET completed_at=?,updated_at=UTC_TIMESTAMP() WHERE id=? AND user_id=?";
-    params = [values[0] === null ? null : String(values[0]), asNumber(values[1]), userId];
+    params = [values[0] === null ? null : new Date(values[0]), asNumber(values[1]), userId];
   } else if (sql.startsWith("UPDATE routine_items SET title")) {
     statement = "UPDATE routine_items SET title=?,updated_at=UTC_TIMESTAMP() WHERE id=? AND user_id=?";
     params = [String(values[0] ?? ""), asNumber(values[1]), userId];
